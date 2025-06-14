@@ -48,11 +48,15 @@ export const CartSheet: React.FC<CartSheetProps> = ({ open, onOpenChange }) => {
       // Get restaurant ID from first item
       const restevracjaId = items[0].restavracija_id;
       
+      // Get current authenticated user ID
+      const { data: authUser } = await supabase.auth.getUser();
+      if (!authUser.user) throw new Error('User not authenticated');
+      
       // Create order
       const { data: narocilo, error: narocilError } = await supabase
         .from('narocila')
         .insert({
-          uporabnik_id: user.user_id,
+          uporabnik_id: authUser.user.id,
           restavracija_id: restevracjaId,
           skupna_cena: getTotalPrice(),
           opomba: komentar.trim() || null,
