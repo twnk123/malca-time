@@ -49,7 +49,10 @@ export const AppLayout: React.FC = () => {
       return (
         <LoginPage 
           onSwitchToRegister={() => setAuthMode('register')}
-          onSwitchToForgotPassword={() => setAuthMode('forgot-password')}
+          onSwitchToForgotPassword={() => {
+            console.log('AppLayout: Switching to forgot-password');
+            setAuthMode('forgot-password');
+          }}
         />
       );
     }

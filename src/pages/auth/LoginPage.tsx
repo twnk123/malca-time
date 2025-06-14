@@ -171,8 +171,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onSwit
                 <Button
                   variant="link"
                   className="p-0 h-auto font-normal text-primary hover:underline"
-                  onClick={onSwitchToForgotPassword}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Pozabljeno geslo klik!');
+                    onSwitchToForgotPassword();
+                  }}
                   disabled={isLoading}
+                  type="button"
                 >
                   Pozabljeno geslo?
                 </Button>
