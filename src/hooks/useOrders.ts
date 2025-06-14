@@ -156,15 +156,52 @@ export const useOrders = (restaurantId?: string) => {
         .on(
           'postgres_changes',
           {
-            event: '*',
+            event: 'INSERT',
+            schema: 'public',
+            table: 'narocila',
+            filter: `restavracija_id=eq.${restaurantId}`
+          },
+          async (payload) => {
+            console.log('New order received:', payload.new);
+            
+            // Fetch the complete order with relations for instant display
+            const { data: newOrder, error } = await supabase
+              .from('narocila')
+              .select(`
+                *,
+                postavke_narocila (
+                  *,
+                  jedi (ime)
+                ),
+                restavracije (naziv),
+                profili (ime, priimek)
+              `)
+              .eq('id', payload.new.id)
+              .single();
+            
+            if (!error && newOrder) {
+              setOrders(prevOrders => [newOrder, ...prevOrders]);
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
             schema: 'public',
             table: 'narocila',
             filter: `restavracija_id=eq.${restaurantId}`
           },
           (payload) => {
-            console.log('Real-time order update:', payload);
-            // Refetch orders when any change occurs
-            fetchOrders();
+            console.log('Order updated:', payload.new);
+            // Update existing order in list
+            setOrders(prevOrders => 
+              prevOrders.map(order => 
+                order.id === payload.new.id 
+                  ? { ...order, ...payload.new }
+                  : order
+              )
+            );
           }
         )
         .subscribe();
