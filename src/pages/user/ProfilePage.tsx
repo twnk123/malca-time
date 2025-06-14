@@ -128,6 +128,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
 
   const reorderItems = async (order: OrderWithItems) => {
     try {
+      // First, get the correct restaurant_id for this order
+      const { data: orderData, error } = await supabase
+        .from('narocila')
+        .select('restavracija_id')
+        .eq('id', order.id)
+        .single();
+
+      if (error) throw error;
+
       // Add all items from the order to cart
       for (const item of order.postavke_narocila) {
         addToCart({
@@ -135,7 +144,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
           naziv: item.jedi.ime,
           cena: item.cena_na_kos,
           opis: item.jedi.opis || '',
-          restavracija_id: order.postavke_narocila[0]?.jedi.id || '', // This should be from restaurant data
+          restavracija_id: orderData.restavracija_id, // Use the correct restaurant ID
           restavracija_naziv: order.restavracije.naziv
         });
       }
