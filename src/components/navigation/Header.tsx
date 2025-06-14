@@ -56,7 +56,10 @@ export const Header: React.FC<HeaderProps> = ({ title, showCart = false, onCartC
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={onProfileClick}
+                  onClick={() => {
+                    console.log('Profile button clicked in Header');
+                    onProfileClick?.();
+                  }}
                   className="relative"
                 >
                   <User className="h-5 w-5" />

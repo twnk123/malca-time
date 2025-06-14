@@ -67,7 +67,10 @@ export const MenuPage: React.FC<MenuPageProps> = ({ restaurant, onBack, onProfil
         title={restaurant.naziv} 
         showCart={true} 
         onCartClick={() => setCartOpen(true)} 
-        onProfileClick={onProfileClick}
+        onProfileClick={() => {
+          console.log('Profile clicked in MenuPage');
+          onProfileClick?.();
+        }}
       />
 
       {/* Restaurant Header */}

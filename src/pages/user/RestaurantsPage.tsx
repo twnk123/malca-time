@@ -31,7 +31,10 @@ export const RestaurantsPage: React.FC<RestaurantsPageProps> = ({ onSelectRestau
         title="Restavracije" 
         showCart={true} 
         onCartClick={() => setCartOpen(true)} 
-        onProfileClick={onProfileClick}
+        onProfileClick={() => {
+          console.log('Profile clicked in RestaurantsPage');
+          onProfileClick();
+        }}
       />
       
       <div className="container mx-auto px-4 py-6">
