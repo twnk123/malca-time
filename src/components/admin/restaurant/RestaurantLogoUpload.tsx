@@ -27,11 +27,8 @@ export const RestaurantLogoUpload: React.FC<RestaurantLogoUploadProps> = ({
           bucket="restaurant-logos"
           maxSize={1}
           acceptedFormats={['.jpg', '.jpeg', '.png', '.webp']}
-          className="w-full h-48"
+          className="w-full h-32"
         />
-        <p className="text-xs text-muted-foreground mt-2">
-          Logotip mora biti PNG, JPG ali WebP, do 1MB, optimalna dimenzija 300x300px.
-        </p>
       </CardContent>
     </Card>
   );
