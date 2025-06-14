@@ -73,7 +73,7 @@ export const AdminOrdersPage: React.FC = () => {
           </Select>
         </div>
 
-        <Tabs value={selectedStanje === 'prevzeto' ? 'prevzeto' : 'aktivna'} className="w-full">
+        <Tabs value={selectedStanje === 'prevzeto' ? 'prevzeto' : 'aktivna'} onValueChange={(value) => setSelectedStanje(value === 'prevzeto' ? 'prevzeto' : 'vsa')} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="aktivna">Aktivna naročila</TabsTrigger>
             <TabsTrigger value="prevzeto">Zgodovina</TabsTrigger>
