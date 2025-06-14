@@ -1,14 +1,10 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Narocilo, PostavkaNarocila, NarociloInsert, PostavkaNarocilaInsert, OrderStatus } from '@/types/database';
+import { OrderStatus } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
 import { CartItem } from './useCart';
-
-interface OrderWithItems extends Narocilo {
-  postavke_narocila: (PostavkaNarocila & { jedi: { ime: string } })[];
-  restavracije: { naziv: string };
-  profili: { ime: string; priimek: string };
-}
+import { OrderWithItems } from '@/types/orders';
+import { orderService } from '@/services/orderService';
+import { useOrderRealtime } from './useOrderRealtime';
 
 export const useOrders = (restaurantId?: string) => {
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
@@ -20,29 +16,8 @@ export const useOrders = (restaurantId?: string) => {
     try {
       setIsLoading(true);
       setError(null);
-
-      let query = supabase
-        .from('narocila')
-        .select(`
-          *,
-          postavke_narocila (
-            *,
-            jedi (ime)
-          ),
-          restavracije (naziv),
-          profili (ime, priimek)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (restaurantId) {
-        query = query.eq('restavracija_id', restaurantId);
-      }
-
-      const { data, error: supabaseError } = await query;
-
-      if (supabaseError) throw supabaseError;
-
-      setOrders(data || []);
+      const data = await orderService.fetchOrders(restaurantId);
+      setOrders(data);
     } catch (err: any) {
       console.error('Error fetching orders:', err);
       setError(err.message);
@@ -65,54 +40,15 @@ export const useOrders = (restaurantId?: string) => {
   ) => {
     try {
       setIsLoading(true);
+      const order = await orderService.createOrder(
+        uporabnikId,
+        restavracijaId,
+        casPrevzema,
+        cartItems,
+        opomba
+      );
 
       const skupnaCena = cartItems.reduce((total, item) => total + (item.jed.cena * item.kolicina), 0);
-
-      // Create order
-      const orderData: NarociloInsert = {
-        uporabnik_id: uporabnikId,
-        restavracija_id: restavracijaId,
-        cas_prevzema: casPrevzema,
-        skupna_cena: skupnaCena,
-        opomba,
-        status: 'novo'
-      };
-
-      const { data: order, error: orderError } = await supabase
-        .from('narocila')
-        .insert(orderData)
-        .select()
-        .single();
-
-      if (orderError) throw orderError;
-
-      // Create order items
-      const orderItems: PostavkaNarocilaInsert[] = cartItems.map(item => ({
-        narocilo_id: order.id,
-        jed_id: item.jed.id,
-        kolicina: item.kolicina,
-        cena_na_kos: item.jed.cena,
-        opomba: item.opomba
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('postavke_narocila')
-        .insert(orderItems);
-
-      if (itemsError) throw itemsError;
-
-      // Send confirmation emails
-      try {
-        console.log('Sending confirmation email for order:', order.id);
-        const emailResult = await supabase.functions.invoke('send-order-confirmation', {
-          body: { orderId: order.id }
-        });
-        console.log('Email function result:', emailResult);
-      } catch (emailError) {
-        console.error('Error sending confirmation emails:', emailError);
-        // Don't fail the order creation if email fails
-      }
-
       toast({
         title: "Naročilo oddano!",
         description: `Vaše naročilo za ${skupnaCena.toFixed(2)}€ je bilo uspešno oddano.`,
@@ -135,18 +71,11 @@ export const useOrders = (restaurantId?: string) => {
 
   const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
     try {
-      const { error } = await supabase
-        .from('narocila')
-        .update({ status })
-        .eq('id', orderId);
-
-      if (error) throw error;
-
+      await orderService.updateOrderStatus(orderId, status);
       toast({
         title: "Status posodobljen",
         description: `Status naročila je bil spremenjen na "${status}".`,
       });
-
       await fetchOrders();
     } catch (err: any) {
       console.error('Error updating order status:', err);
@@ -160,69 +89,10 @@ export const useOrders = (restaurantId?: string) => {
 
   useEffect(() => {
     fetchOrders();
-
-    // Set up real-time subscription for orders
-    if (restaurantId) {
-      const channel = supabase
-        .channel('schema-db-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'narocila',
-            filter: `restavracija_id=eq.${restaurantId}`
-          },
-          async (payload) => {
-            console.log('New order received:', payload.new);
-            
-            // Fetch the complete order with relations for instant display
-            const { data: newOrder, error } = await supabase
-              .from('narocila')
-              .select(`
-                *,
-                postavke_narocila (
-                  *,
-                  jedi (ime)
-                ),
-                restavracije (naziv),
-                profili (ime, priimek)
-              `)
-              .eq('id', payload.new.id)
-              .single();
-            
-            if (!error && newOrder) {
-              setOrders(prevOrders => [newOrder, ...prevOrders]);
-            }
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'narocila',
-            filter: `restavracija_id=eq.${restaurantId}`
-          },
-          (payload) => {
-            console.log('Order updated:', payload.new);
-            // Update existing order in list
-            setOrders(prevOrders => 
-              prevOrders.map(order => 
-                order.id === payload.new.id 
-                  ? { ...order, ...payload.new }
-                  : order
-              )
-            );
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
   }, [restaurantId]);
+
+  // Set up real-time subscription
+  useOrderRealtime(restaurantId, setOrders);
 
   return {
     orders,
