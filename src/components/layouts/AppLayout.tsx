@@ -8,13 +8,14 @@ import { RestaurantsPage } from '@/pages/user/RestaurantsPage';
 import { MenuPage } from '@/pages/user/MenuPage';
 import { AdminMenuPage } from '@/pages/admin/AdminMenuPage';
 import { AdminOrdersPage } from '@/pages/admin/AdminOrdersPage';
+import { AdminAnalyticsPage } from '@/pages/admin/AdminAnalyticsPage';
 import { Database } from '@/integrations/supabase/types';
 
 type Restavracija = Database['public']['Tables']['restavracije']['Row'];
 
 type AuthMode = 'login' | 'register' | 'forgot-password' | 'reset-password';
 type UserView = 'restaurants' | 'menu';
-type AdminView = 'menu' | 'orders';
+type AdminView = 'menu' | 'orders' | 'analytics';
 
 export const AppLayout: React.FC = () => {
   const { user, isLoading } = useAuthContext();
@@ -100,12 +101,24 @@ export const AppLayout: React.FC = () => {
               >
                 Naročila
               </button>
+              <button
+                onClick={() => setAdminView('analytics')}
+                className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  adminView === 'analytics'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Analitika
+              </button>
             </nav>
           </div>
         </div>
 
         {/* Admin Content */}
-        {adminView === 'menu' ? <AdminMenuPage /> : <AdminOrdersPage />}
+        {adminView === 'menu' ? <AdminMenuPage /> : 
+         adminView === 'orders' ? <AdminOrdersPage /> : 
+         <AdminAnalyticsPage />}
       </div>
     );
   }

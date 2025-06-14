@@ -101,6 +101,16 @@ export const useOrders = (restaurantId?: string) => {
 
       if (itemsError) throw itemsError;
 
+      // Send confirmation emails
+      try {
+        await supabase.functions.invoke('send-order-confirmation', {
+          body: { orderId: order.id }
+        });
+      } catch (emailError) {
+        console.error('Error sending confirmation emails:', emailError);
+        // Don't fail the order creation if email fails
+      }
+
       toast({
         title: "Naročilo oddano!",
         description: `Vaše naročilo za ${skupnaCena.toFixed(2)}€ je bilo uspešno oddano.`,
