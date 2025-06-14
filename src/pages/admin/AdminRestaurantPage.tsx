@@ -43,7 +43,7 @@ export const AdminRestaurantPage: React.FC = () => {
       const { data: adminData, error: adminError } = await supabase
         .from('admin_restavracije')
         .select('restavracija_id')
-        .eq('admin_id', user?.id)
+        .eq('admin_id', user?.user_id)
         .maybeSingle();
 
       if (adminError) throw adminError;
