@@ -77,7 +77,7 @@ export const ProfilePage: React.FC = () => {
           ),
           restavracije (naziv)
         `)
-        .eq('uporabnik_id', user.id)
+        .eq('uporabnik_id', user?.id)
         .order('created_at', { ascending: false });
 
       if (ordersError) throw ordersError;
@@ -87,12 +87,12 @@ export const ProfilePage: React.FC = () => {
         .from('priljubljene_jedi')
         .select(`
           *,
-          jedi (
+          jedi!inner (
             *,
-            restavracije (naziv)
+            restavracije!inner (naziv)
           )
         `)
-        .eq('uporabnik_id', user.id);
+        .eq('uporabnik_id', user?.id);
 
       if (favoritesError) throw favoritesError;
 

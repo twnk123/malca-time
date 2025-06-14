@@ -17,7 +17,7 @@ interface RestaurantsPageProps {
 
 export const RestaurantsPage: React.FC<RestaurantsPageProps> = ({ onSelectRestaurant }) => {
   const [cartOpen, setCartOpen] = useState(false);
-  const { restaurants, isLoading, error } = useRestaurants();
+    const { restaurants, isLoading, error } = useRestaurants();
 
   const handleSelectRestaurant = (restaurant: Restavracija) => {
     onSelectRestaurant(restaurant);
@@ -73,7 +73,7 @@ export const RestaurantsPage: React.FC<RestaurantsPageProps> = ({ onSelectRestau
             >
               <Card 
                 className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer"
-                onClick={() => handleSelectRestaurant(restavracija)}
+                onClick={() => handleSelectRestaurant(restavracija as any)}
               >
                 <div className="aspect-[4/3] relative overflow-hidden bg-muted">
                   <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">

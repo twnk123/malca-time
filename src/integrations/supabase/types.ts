@@ -342,7 +342,22 @@ export type Database = {
           jed_id?: string
           uporabnik_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_priljubljene_jedi_jed"
+            columns: ["jed_id"]
+            isOneToOne: false
+            referencedRelation: "jedi"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_priljubljene_jedi_uporabnik"
+            columns: ["uporabnik_id"]
+            isOneToOne: false
+            referencedRelation: "profili"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profili: {
         Row: {
