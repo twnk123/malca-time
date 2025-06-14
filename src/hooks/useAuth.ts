@@ -15,6 +15,8 @@ interface UseAuthReturn {
   signUp: (email: string, password: string, ime: string, priimek: string, telefon?: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
 }
 
 export const useAuth = (): UseAuthReturn => {
@@ -223,12 +225,66 @@ export const useAuth = (): UseAuthReturn => {
     }
   };
 
+  const resetPassword = async (email: string) => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "E-pošta poslana",
+        description: "Preverite svojo e-pošto za navodila za ponastavitev gesla.",
+      });
+    } catch (error: any) {
+      console.error('Reset password error:', error);
+      toast({
+        title: "Napaka pri pošiljanju e-pošte",
+        description: error.message || "Prišlo je do napake. Poskusite znova.",
+        variant: "destructive"
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updatePassword = async (password: string) => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase.auth.updateUser({
+        password: password
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Geslo posodobljeno",
+        description: "Vaše geslo je bilo uspešno posodobljeno.",
+      });
+    } catch (error: any) {
+      console.error('Update password error:', error);
+      toast({
+        title: "Napaka pri posodabljanju gesla",
+        description: error.message || "Prišlo je do napake. Poskusite znova.",
+        variant: "destructive"
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     user,
     session,
     isLoading,
     signUp,
     signIn,
-    signOut
+    signOut,
+    resetPassword,
+    updatePassword
   };
 };

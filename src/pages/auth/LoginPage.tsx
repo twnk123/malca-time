@@ -165,7 +165,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
               </div>
             </div>
 
-            <div className="text-center">
+            <div className="text-center space-y-2">
+              <p className="text-sm text-muted-foreground">
+                <Button
+                  variant="link"
+                  className="p-0 h-auto font-normal text-primary hover:underline"
+                  onClick={() => {/* TODO: Add forgot password handler */}}
+                  disabled={isLoading}
+                >
+                  Pozabljeno geslo?
+                </Button>
+              </p>
               <p className="text-sm text-muted-foreground">
                 Nimate računa?{' '}
                 <Button
