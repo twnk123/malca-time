@@ -48,15 +48,11 @@ export const CartSheet: React.FC<CartSheetProps> = ({ open, onOpenChange }) => {
       // Get restaurant ID from first item
       const restevracjaId = items[0].restavracija_id;
       
-      // Get current authenticated user ID
-      const { data: authUser } = await supabase.auth.getUser();
-      if (!authUser.user) throw new Error('User not authenticated');
-      
-      // Create order
+      // Create order using profile ID (not auth user ID)
       const { data: narocilo, error: narocilError } = await supabase
         .from('narocila')
         .insert({
-          uporabnik_id: authUser.user.id,
+          uporabnik_id: user.id, // Use profile ID which is what the foreign key references
           restavracija_id: restevracjaId,
           skupna_cena: getTotalPrice(),
           opomba: komentar.trim() || null,
