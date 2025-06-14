@@ -394,7 +394,7 @@ export const AdminMenuPage: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 pt-5">
                   <Switch
                     id="na_voljo"
                     checked={jedForm.na_voljo}
