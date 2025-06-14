@@ -63,11 +63,11 @@ export const CartSheet: React.FC<CartSheetProps> = ({ open, onOpenChange }) => {
           na_voljo: true,
           slika_url: '',
           vrstni_red: 0,
-          created_at: '',
-          updated_at: ''
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         },
         kolicina: item.kolicina,
-        opomba: null
+        opomba: undefined
       }));
 
       console.log('CartSheet: Calling createOrder with:', { restavracijaId, cartItems });
