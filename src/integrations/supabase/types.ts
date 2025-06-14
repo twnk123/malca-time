@@ -30,13 +30,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "admin_restavracije_admin_id_fkey"
-            columns: ["admin_id"]
-            isOneToOne: false
-            referencedRelation: "profili"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "admin_restavracije_restavracija_id_fkey"
             columns: ["restavracija_id"]
             isOneToOne: false

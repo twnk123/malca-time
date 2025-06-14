@@ -38,14 +38,7 @@ export const useAuth = (): UseAuthReturn => {
       const { data: profil, error } = await supabase
         .from('profili')
         .select(`
-          *,
-          admin_restavracije (
-            restavracija_id,
-            restavracije (
-              id,
-              naziv
-            )
-          )
+          *
         `)
         .eq('user_id', userId)
         .single();
@@ -55,10 +48,24 @@ export const useAuth = (): UseAuthReturn => {
         return null;
       }
 
+      // If user is admin_restavracije, get restaurant connection
+      let restavracija_id = undefined;
+      if (profil.vloga === 'admin_restavracije') {
+        const { data: adminData } = await supabase
+          .from('admin_restavracije')
+          .select('restavracija_id')
+          .eq('admin_id', userId)
+          .single();
+        
+        if (adminData) {
+          restavracija_id = adminData.restavracija_id;
+        }
+      }
+
       // If user is admin_restavracije, add restavracija_id
       const authUser: AuthUser = {
         ...profil,
-        restavracija_id: profil.admin_restavracije?.[0]?.restavracija_id
+        restavracija_id
       };
 
       return authUser;
