@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Calendar, Clock, CheckCircle, XCircle, RotateCcw, Heart } from 'lucide-react';
+import { User, Calendar, Clock, CheckCircle, XCircle, RotateCcw, Heart, ArrowLeft } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -49,7 +49,11 @@ interface FavoriteFood {
   };
 }
 
-export const ProfilePage: React.FC = () => {
+interface ProfilePageProps {
+  onBack?: () => void;
+}
+
+export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
   const { user } = useAuthContext();
   const { addToCart } = useCart();
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
@@ -204,6 +208,17 @@ export const ProfilePage: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
+      {onBack && (
+        <Button
+          variant="ghost"
+          onClick={onBack}
+          className="mb-4"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Nazaj
+        </Button>
+      )}
+      
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

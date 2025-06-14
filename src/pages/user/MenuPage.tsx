@@ -18,9 +18,10 @@ type Jed = Database['public']['Tables']['jedi']['Row'];
 interface MenuPageProps {
   restaurant: Restavracija;
   onBack: () => void;
+  onProfileClick?: () => void;
 }
 
-export const MenuPage: React.FC<MenuPageProps> = ({ restaurant, onBack }) => {
+export const MenuPage: React.FC<MenuPageProps> = ({ restaurant, onBack, onProfileClick }) => {
   const [cartOpen, setCartOpen] = useState(false);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const { addToCart } = useCart();
