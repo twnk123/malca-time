@@ -137,7 +137,20 @@ export const AppLayout: React.FC = () => {
   
   // Uporabniške stranice
   if (user.vloga === 'uporabnik') {
-    if (userView === 'restaurants' || !selectedRestaurant) {
+    console.log('User view state:', userView, 'Selected restaurant:', selectedRestaurant);
+    
+    if (userView === 'profile') {
+      return (
+        <motion.div
+          initial={{ opacity: 0, x: 300 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 300 }}
+          transition={{ duration: 0.3 }}
+        >
+          <ProfilePage onBack={() => setUserView(selectedRestaurant ? 'menu' : 'restaurants')} />
+        </motion.div>
+      );
+    } else if (userView === 'restaurants' || !selectedRestaurant) {
       return (
         <RestaurantsPage
           onSelectRestaurant={(restaurant) => {
@@ -158,19 +171,11 @@ export const AppLayout: React.FC = () => {
             setUserView('restaurants');
             setSelectedRestaurant(null);
           }}
-          onProfileClick={() => setUserView('profile')}
+          onProfileClick={() => {
+            console.log('Profile clicked in AppLayout - setting view to profile');
+            setUserView('profile');
+          }}
         />
-      );
-    } else if (userView === 'profile') {
-      return (
-        <motion.div
-          initial={{ opacity: 0, x: 300 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 300 }}
-          transition={{ duration: 0.3 }}
-        >
-          <ProfilePage onBack={() => setUserView(selectedRestaurant ? 'menu' : 'restaurants')} />
-        </motion.div>
       );
     }
   }
