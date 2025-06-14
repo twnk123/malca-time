@@ -135,7 +135,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
         />
 
         {currentImage ? (
-          <div className="relative group overflow-hidden rounded-lg">
+          <div className="relative group overflow-hidden rounded-lg h-32">
             <img
               src={currentImage}
               alt="Naložena slika"
