@@ -71,14 +71,16 @@ export const orderService = {
 
     // Send confirmation emails
     try {
-      console.log('Sending confirmation email for order:', order.id);
+      console.log('About to call send-order-confirmation function for order:', order.id);
       const emailResult = await supabase.functions.invoke('send-order-confirmation', {
         body: { orderId: order.id }
       });
-      console.log('Email function result:', emailResult);
+      console.log('Email function called successfully:', emailResult);
+      if (emailResult.error) {
+        console.error('Email function returned error:', emailResult.error);
+      }
     } catch (emailError) {
-      console.error('Error sending confirmation emails:', emailError);
-      // Don't fail the order creation if email fails
+      console.error('Error calling send-order-confirmation function:', emailError);
     }
 
     return order;
