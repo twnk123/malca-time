@@ -9,9 +9,10 @@ import { useAuthContext } from '@/contexts/AuthContext';
 
 interface LoginPageProps {
   onSwitchToRegister: () => void;
+  onSwitchToForgotPassword: () => void;
 }
 
-export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
+export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onSwitchToForgotPassword }) => {
   const { signIn, isLoading } = useAuthContext();
   const [formData, setFormData] = useState({
     email: '',
@@ -170,7 +171,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
                 <Button
                   variant="link"
                   className="p-0 h-auto font-normal text-primary hover:underline"
-                  onClick={() => {/* TODO: Add forgot password handler */}}
+                  onClick={onSwitchToForgotPassword}
                   disabled={isLoading}
                 >
                   Pozabljeno geslo?

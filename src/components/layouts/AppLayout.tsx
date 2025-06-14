@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { RegisterPage } from '@/pages/auth/RegisterPage';
+import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
+import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
 import { RestaurantsPage } from '@/pages/user/RestaurantsPage';
 import { MenuPage } from '@/pages/user/MenuPage';
 import { AdminMenuPage } from '@/pages/admin/AdminMenuPage';
@@ -10,7 +12,7 @@ import { Database } from '@/integrations/supabase/types';
 
 type Restavracija = Database['public']['Tables']['restavracije']['Row'];
 
-type AuthMode = 'login' | 'register';
+type AuthMode = 'login' | 'register' | 'forgot-password' | 'reset-password';
 type UserView = 'restaurants' | 'menu';
 type AdminView = 'menu' | 'orders';
 
@@ -37,13 +39,18 @@ export const AppLayout: React.FC = () => {
 
   // Auth stranice
   if (!user) {
-    if (authMode === 'login') {
-      return (
-        <LoginPage onSwitchToRegister={() => setAuthMode('register')} />
-      );
+    if (authMode === 'register') {
+      return <RegisterPage onSwitchToLogin={() => setAuthMode('login')} />;
+    } else if (authMode === 'forgot-password') {
+      return <ForgotPasswordPage onBackToLogin={() => setAuthMode('login')} />;
+    } else if (authMode === 'reset-password') {
+      return <ResetPasswordPage onSuccess={() => setAuthMode('login')} />;
     } else {
       return (
-        <RegisterPage onSwitchToLogin={() => setAuthMode('login')} />
+        <LoginPage 
+          onSwitchToRegister={() => setAuthMode('register')}
+          onSwitchToForgotPassword={() => setAuthMode('forgot-password')}
+        />
       );
     }
   }
