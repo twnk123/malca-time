@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useRestaurants } from '@/hooks/useRestaurants';
+import { getOrderingStatus } from '@/utils/workingHours';
 import { Database } from '@/integrations/supabase/types';
 
 type Restavracija = Database['public']['Tables']['restavracije']['Row'];
@@ -64,28 +65,46 @@ export const RestaurantsPage: React.FC<RestaurantsPageProps> = ({ onSelectRestau
           </div>
         ) : (
           <div className="grid gap-4">
-            {restaurants.map((restavracija, index) => (
-            <motion.div
-              key={restavracija.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Card 
-                className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer"
-                onClick={() => handleSelectRestaurant(restavracija as any)}
-              >
-                <div className="aspect-[4/3] relative overflow-hidden bg-muted">
-                  <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                    <span className="text-4xl font-bold text-primary/30">{restavracija.naziv.charAt(0)}</span>
-                  </div>
-                  <div className="absolute top-3 left-3">
-                    <Badge variant="secondary" className="bg-background/90 text-foreground">
-                      <Star className="h-3 w-3 mr-1 fill-current" />
-                      4.5
-                    </Badge>
-                  </div>
-                </div>
+            {restaurants.map((restavracija, index) => {
+              const orderingStatus = getOrderingStatus(restavracija.delovni_cas_od, restavracija.delovni_cas_do);
+              const isClosed = orderingStatus === 'closed';
+              
+              return (
+                <motion.div
+                  key={restavracija.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <Card 
+                    className={`overflow-hidden transition-all duration-300 cursor-pointer ${
+                      isClosed 
+                        ? 'opacity-60 hover:shadow-md' 
+                        : 'hover:shadow-lg'
+                    }`}
+                    onClick={() => !isClosed && handleSelectRestaurant(restavracija as any)}
+                  >
+                    <div className="aspect-[4/3] relative overflow-hidden bg-muted">
+                      <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                        <span className="text-4xl font-bold text-primary/30">{restavracija.naziv.charAt(0)}</span>
+                      </div>
+                      <div className="absolute top-3 left-3 flex gap-2">
+                        <Badge variant="secondary" className="bg-background/90 text-foreground">
+                          <Star className="h-3 w-3 mr-1 fill-current" />
+                          4.5
+                        </Badge>
+                        {isClosed && (
+                          <Badge variant="destructive" className="bg-destructive/90 text-destructive-foreground">
+                            Zaprto
+                          </Badge>
+                        )}
+                        {orderingStatus === 'closing_soon' && (
+                          <Badge variant="outline" className="bg-yellow-500/90 text-white">
+                            Kmalu zapiramo
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
                 
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
@@ -113,7 +132,12 @@ export const RestaurantsPage: React.FC<RestaurantsPageProps> = ({ onSelectRestau
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                     >
-                      <Button variant="ghost" size="icon" className="ml-2">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="ml-2"
+                        disabled={isClosed}
+                      >
                         <ChevronRight className="h-4 w-4" />
                       </Button>
                     </motion.div>
@@ -121,7 +145,8 @@ export const RestaurantsPage: React.FC<RestaurantsPageProps> = ({ onSelectRestau
                 </CardContent>
               </Card>
             </motion.div>
-            ))}
+              );
+            })}
           </div>
         )}
 

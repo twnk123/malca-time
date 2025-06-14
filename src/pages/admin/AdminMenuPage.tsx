@@ -15,6 +15,7 @@ import { ImageUpload } from '@/components/ui/image-upload';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { DiscountManager } from '@/components/admin/DiscountManager';
 import { Database } from '@/integrations/supabase/types';
 
 type Jed = Database['public']['Tables']['jedi']['Row'];
@@ -47,6 +48,7 @@ export const AdminMenuPage: React.FC = () => {
   const [jedForm, setJedForm] = useState<JedForm>(defaultJedForm);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [discountRefresh, setDiscountRefresh] = useState(0);
 
   // Fetch admin's restaurant data
   useEffect(() => {
@@ -501,6 +503,21 @@ export const AdminMenuPage: React.FC = () => {
             </motion.div>
           ))}
         </div>
+
+        {/* Discount Management Section */}
+        {restavracjaId && jedi.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <DiscountManager 
+              jedi={jedi}
+              restaurantId={restavracjaId}
+              onDiscountChange={() => setDiscountRefresh(prev => prev + 1)}
+            />
+          </motion.div>
+        )}
       </div>
     </div>
   );

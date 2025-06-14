@@ -74,7 +74,7 @@ export const CartSheet: React.FC<CartSheetProps> = ({ open, onOpenChange }) => {
       
       // Use the orderService to create order and send emails
       await createOrder(
-        user.id,
+        user.user_id,
         restavracijaId,
         new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutes from now
         cartItems,
