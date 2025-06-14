@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Minus, Plus, X, ShoppingCart } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 
 interface CartSheetProps {
@@ -15,6 +17,7 @@ interface CartSheetProps {
 
 export const CartSheet: React.FC<CartSheetProps> = ({ open, onOpenChange }) => {
   const { items, updateQuantity, removeFromCart, getTotalPrice, clearCart } = useCart();
+  const [komentar, setKomentar] = useState('');
 
   const handleOrderSubmit = () => {
     if (items.length === 0) {
@@ -27,12 +30,14 @@ export const CartSheet: React.FC<CartSheetProps> = ({ open, onOpenChange }) => {
     }
 
     // Mock oddaja naročila
+    const opisNarocila = komentar.trim() ? ` (${komentar.trim()})` : '';
     toast({
       title: "Naročilo oddano!",
-      description: `Vaše naročilo v vrednosti ${getTotalPrice().toFixed(2)}€ je bilo uspešno oddano.`,
+      description: `Vaše naročilo v vrednosti ${getTotalPrice().toFixed(2)}€ je bilo uspešno oddano.${opisNarocila}`,
     });
     
     clearCart();
+    setKomentar('');
     onOpenChange(false);
   };
 
@@ -130,6 +135,22 @@ export const CartSheet: React.FC<CartSheetProps> = ({ open, onOpenChange }) => {
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold">Skupaj:</span>
                   <span className="text-lg font-bold">{getTotalPrice().toFixed(2)}€</span>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="komentar">Komentar k naročilu (opcijsko)</Label>
+                  <Textarea
+                    id="komentar"
+                    placeholder="Dodajte komentar k naročilu..."
+                    value={komentar}
+                    onChange={(e) => setKomentar(e.target.value.slice(0, 250))}
+                    maxLength={250}
+                    rows={3}
+                    className="resize-none"
+                  />
+                  <p className="text-xs text-muted-foreground text-right">
+                    {komentar.length}/250 znakov
+                  </p>
                 </div>
 
                 <motion.div

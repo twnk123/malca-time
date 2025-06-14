@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Edit, Trash2, Save, X } from 'lucide-react';
 import { Header } from '@/components/navigation/Header';
@@ -12,36 +12,104 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { mockJedi, Jed } from '@/data/mockData';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuthContext } from '@/contexts/AuthContext';
+import { Database } from '@/integrations/supabase/types';
+
+type Jed = Database['public']['Tables']['jedi']['Row'];
+type KategorijaMenija = Database['public']['Tables']['kategorije_menija']['Row'];
 
 interface JedForm {
-  naziv: string;
+  ime: string;
   opis: string;
   cena: string;
-  kategorija: string;
+  kategorija_id: string;
   na_voljo: boolean;
 }
 
 const defaultJedForm: JedForm = {
-  naziv: '',
+  ime: '',
   opis: '',
   cena: '',
-  kategorija: 'Glavne jedi',
+  kategorija_id: '',
   na_voljo: true
 };
 
-const kategorije = ['Glavne jedi', 'Juhe', 'Pijače', 'Sladice'];
-
 export const AdminMenuPage: React.FC = () => {
-  const [jedi, setJedi] = useState<Jed[]>(
-    mockJedi.filter(jed => jed.restavracija_id === 'rest_1')
-  );
+  const { user } = useAuthContext();
+  const [jedi, setJedi] = useState<Jed[]>([]);
+  const [kategorije, setKategorije] = useState<KategorijaMenija[]>([]);
+  const [restavracjaId, setRestavracjaId] = useState<string>('');
   const [editingJed, setEditingJed] = useState<Jed | null>(null);
   const [jedForm, setJedForm] = useState<JedForm>(defaultJedForm);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleSaveJed = () => {
-    if (!jedForm.naziv || !jedForm.opis || !jedForm.cena) {
+  // Fetch admin's restaurant data
+  useEffect(() => {
+    const fetchAdminData = async () => {
+      if (!user?.id) return;
+
+      try {
+        // Get admin's restaurant
+        const { data: adminRestaurant, error: adminError } = await supabase
+          .from('admin_restavracije')
+          .select(`
+            restavracija_id,
+            restavracije!inner(*)
+          `)
+          .eq('admin_id', user.id)
+          .single();
+
+        if (adminError) throw adminError;
+
+        const restId = adminRestaurant.restavracija_id;
+        setRestavracjaId(restId);
+
+        // Fetch categories and dishes
+        const [kategorijeSResponse, jediResponse] = await Promise.all([
+          supabase
+            .from('kategorije_menija')
+            .select('*')
+            .eq('restavracija_id', restId)
+            .order('vrstni_red'),
+          supabase
+            .from('jedi')
+            .select('*')
+            .eq('restavracija_id', restId)
+            .order('vrstni_red')
+        ]);
+
+        if (kategorijeSResponse.error) throw kategorijeSResponse.error;
+        if (jediResponse.error) throw jediResponse.error;
+
+        setKategorije(kategorijeSResponse.data || []);
+        setJedi(jediResponse.data || []);
+
+        // Set default category if available
+        if (kategorijeSResponse.data && kategorijeSResponse.data.length > 0) {
+          setJedForm(prev => ({ 
+            ...prev, 
+            kategorija_id: kategorijeSResponse.data[0].id 
+          }));
+        }
+      } catch (error: any) {
+        console.error('Error fetching admin data:', error);
+        toast({
+          title: "Napaka",
+          description: "Napaka pri nalaganju podatkov restavracije.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAdminData();
+  }, [user?.id]);
+
+  const handleSaveJed = async () => {
+    if (!jedForm.ime || !jedForm.opis || !jedForm.cena || !jedForm.kategorija_id) {
       toast({
         title: "Napaka",
         description: "Prosimo, izpolnite vsa obvezna polja.",
@@ -60,72 +128,151 @@ export const AdminMenuPage: React.FC = () => {
       return;
     }
 
-    if (editingJed) {
-      // Urejanje
-      setJedi(prev => prev.map(jed => 
-        jed.id === editingJed.id 
-          ? { ...jed, ...jedForm, cena }
-          : jed
-      ));
+    try {
+      if (editingJed) {
+        // Update existing dish
+        const { error } = await supabase
+          .from('jedi')
+          .update({
+            ime: jedForm.ime,
+            opis: jedForm.opis,
+            cena,
+            kategorija_id: jedForm.kategorija_id,
+            na_voljo: jedForm.na_voljo
+          })
+          .eq('id', editingJed.id);
+
+        if (error) throw error;
+
+        // Update local state
+        setJedi(prev => prev.map(jed => 
+          jed.id === editingJed.id 
+            ? { ...jed, ime: jedForm.ime, opis: jedForm.opis, cena, kategorija_id: jedForm.kategorija_id, na_voljo: jedForm.na_voljo }
+            : jed
+        ));
+
+        toast({
+          title: "Jed posodobljena",
+          description: `${jedForm.ime} je bila uspešno posodobljena.`,
+        });
+      } else {
+        // Add new dish
+        const { data, error } = await supabase
+          .from('jedi')
+          .insert({
+            ime: jedForm.ime,
+            opis: jedForm.opis,
+            cena,
+            kategorija_id: jedForm.kategorija_id,
+            restavracija_id: restavracjaId,
+            na_voljo: jedForm.na_voljo,
+            vrstni_red: jedi.length + 1
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setJedi(prev => [...prev, data]);
+        toast({
+          title: "Jed dodana",
+          description: `${jedForm.ime} je bila uspešno dodana v meni.`,
+        });
+      }
+
+      setJedForm(defaultJedForm);
+      setEditingJed(null);
+      setDialogOpen(false);
+    } catch (error: any) {
+      console.error('Error saving dish:', error);
       toast({
-        title: "Jed posodobljena",
-        description: `${jedForm.naziv} je bila uspešno posodobljena.`,
-      });
-    } else {
-      // Dodajanje nove
-      const novaJed: Jed = {
-        id: `jed_${Date.now()}`,
-        naziv: jedForm.naziv,
-        opis: jedForm.opis,
-        cena,
-        kategorija: jedForm.kategorija,
-        restavracija_id: 'rest_1',
-        na_voljo: jedForm.na_voljo
-      };
-      setJedi(prev => [...prev, novaJed]);
-      toast({
-        title: "Jed dodana",
-        description: `${jedForm.naziv} je bila uspešno dodana v meni.`,
+        title: "Napaka",
+        description: "Napaka pri shranjevanju jedi.",
+        variant: "destructive"
       });
     }
-
-    setJedForm(defaultJedForm);
-    setEditingJed(null);
-    setDialogOpen(false);
   };
 
   const handleEditJed = (jed: Jed) => {
     setEditingJed(jed);
     setJedForm({
-      naziv: jed.naziv,
-      opis: jed.opis,
+      ime: jed.ime,
+      opis: jed.opis || '',
       cena: jed.cena.toString(),
-      kategorija: jed.kategorija,
+      kategorija_id: jed.kategorija_id,
       na_voljo: jed.na_voljo
     });
     setDialogOpen(true);
   };
 
-  const handleDeleteJed = (jedId: string) => {
-    setJedi(prev => prev.filter(jed => jed.id !== jedId));
-    toast({
-      title: "Jed odstranjena",
-      description: "Jed je bila uspešno odstranjena iz menija.",
-    });
+  const handleDeleteJed = async (jedId: string) => {
+    try {
+      const { error } = await supabase
+        .from('jedi')
+        .delete()
+        .eq('id', jedId);
+
+      if (error) throw error;
+
+      setJedi(prev => prev.filter(jed => jed.id !== jedId));
+      toast({
+        title: "Jed odstranjena",
+        description: "Jed je bila uspešno odstranjena iz menija.",
+      });
+    } catch (error: any) {
+      console.error('Error deleting dish:', error);
+      toast({
+        title: "Napaka",
+        description: "Napaka pri brisanju jedi.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleToggleAvailability = (jedId: string) => {
-    setJedi(prev => prev.map(jed => 
-      jed.id === jedId 
-        ? { ...jed, na_voljo: !jed.na_voljo }
-        : jed
-    ));
+  const handleToggleAvailability = async (jedId: string) => {
+    const jed = jedi.find(j => j.id === jedId);
+    if (!jed) return;
+
+    try {
+      const { error } = await supabase
+        .from('jedi')
+        .update({ na_voljo: !jed.na_voljo })
+        .eq('id', jedId);
+
+      if (error) throw error;
+
+      setJedi(prev => prev.map(j => 
+        j.id === jedId 
+          ? { ...j, na_voljo: !j.na_voljo }
+          : j
+      ));
+    } catch (error: any) {
+      console.error('Error toggling availability:', error);
+      toast({
+        title: "Napaka",
+        description: "Napaka pri posodabljanju dostopnosti jedi.",
+        variant: "destructive"
+      });
+    }
   };
 
   const jediPoKategorijah = kategorije.reduce((acc, kategorija) => {
-    acc[kategorija] = jedi.filter(jed => jed.kategorija === kategorija);
+    acc[kategorija.id] = jedi.filter(jed => jed.kategorija_id === kategorija.id);
     return acc;
   }, {} as Record<string, Jed[]>);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header title="Upravljanje menija" />
+        <div className="container mx-auto px-4 py-6">
+          <div className="text-center">
+            <p className="text-muted-foreground">Nalagam...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -148,7 +295,10 @@ export const AdminMenuPage: React.FC = () => {
                 <Button 
                   onClick={() => {
                     setEditingJed(null);
-                    setJedForm(defaultJedForm);
+                    setJedForm({
+                      ...defaultJedForm,
+                      kategorija_id: kategorije.length > 0 ? kategorije[0].id : ''
+                    });
                   }}
                 >
                   <Plus className="h-4 w-4 mr-2" />
@@ -166,11 +316,11 @@ export const AdminMenuPage: React.FC = () => {
               
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="naziv">Naziv jedi *</Label>
+                  <Label htmlFor="ime">Naziv jedi *</Label>
                   <Input
-                    id="naziv"
-                    value={jedForm.naziv}
-                    onChange={(e) => setJedForm(prev => ({ ...prev, naziv: e.target.value }))}
+                    id="ime"
+                    value={jedForm.ime}
+                    onChange={(e) => setJedForm(prev => ({ ...prev, ime: e.target.value }))}
                     placeholder="Vnesite naziv jedi"
                   />
                 </div>
@@ -203,16 +353,16 @@ export const AdminMenuPage: React.FC = () => {
                   <div className="space-y-2">
                     <Label htmlFor="kategorija">Kategorija</Label>
                     <Select 
-                      value={jedForm.kategorija} 
-                      onValueChange={(value) => setJedForm(prev => ({ ...prev, kategorija: value }))}
+                      value={jedForm.kategorija_id} 
+                      onValueChange={(value) => setJedForm(prev => ({ ...prev, kategorija_id: value }))}
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         {kategorije.map(kategorija => (
-                          <SelectItem key={kategorija} value={kategorija}>
-                            {kategorija}
+                          <SelectItem key={kategorija.id} value={kategorija.id}>
+                            {kategorija.naziv}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -252,7 +402,7 @@ export const AdminMenuPage: React.FC = () => {
         <div className="space-y-6">
           {kategorije.map((kategorija, kategorijIndex) => (
             <motion.div
-              key={kategorija}
+              key={kategorija.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: kategorijIndex * 0.1 }}
@@ -260,19 +410,19 @@ export const AdminMenuPage: React.FC = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    {kategorija}
+                    {kategorija.naziv}
                     <Badge variant="secondary">
-                      {jediPoKategorijah[kategorija].length} jedi
+                      {jediPoKategorijah[kategorija.id]?.length || 0} jedi
                     </Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {jediPoKategorijah[kategorija].length === 0 ? (
+                  {(!jediPoKategorijah[kategorija.id] || jediPoKategorijah[kategorija.id].length === 0) ? (
                     <p className="text-muted-foreground text-center py-8">
                       V tej kategoriji še ni dodanih jedi
                     </p>
                   ) : (
-                    jediPoKategorijah[kategorija].map((jed, index) => (
+                    jediPoKategorijah[kategorija.id].map((jed, index) => (
                       <motion.div
                         key={jed.id}
                         initial={{ opacity: 0, x: -20 }}
@@ -283,7 +433,7 @@ export const AdminMenuPage: React.FC = () => {
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-1">
                             <h4 className="font-medium text-foreground">
-                              {jed.naziv}
+                              {jed.ime}
                             </h4>
                             <Badge 
                               variant={jed.na_voljo ? "default" : "destructive"}
@@ -296,7 +446,7 @@ export const AdminMenuPage: React.FC = () => {
                             {jed.opis}
                           </p>
                           <p className="font-semibold text-foreground">
-                            {jed.cena.toFixed(2)}€
+                            {Number(jed.cena).toFixed(2)}€
                           </p>
                         </div>
 
