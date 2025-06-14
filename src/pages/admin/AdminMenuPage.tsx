@@ -389,9 +389,6 @@ export const AdminMenuPage: React.FC = () => {
                     acceptedFormats={['.jpg', '.jpeg', '.png', '.webp']}
                     className="w-full h-32"
                   />
-                  <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
-                    Podprte so JPG, PNG in WebP datoteke do 2MB. Priporočena velikost je 800×800px.
-                  </p>
                 </div>
 
                 <div className="flex items-center space-x-2 pt-8 border-t border-border/50 mt-6">
