@@ -48,7 +48,11 @@ export const AdminRestaurantPage: React.FC = () => {
 
       if (adminError) throw adminError;
       if (!adminData) {
-        console.log('No restaurant assigned to this admin');
+        toast({
+          title: "Napaka",
+          description: "Vam ni dodeljena nobena restavracija. Kontaktirajte administratorja.",
+          variant: "destructive"
+        });
         return;
       }
 
@@ -148,7 +152,8 @@ export const AdminRestaurantPage: React.FC = () => {
       <div className="container mx-auto px-4 py-8">
         <Card>
           <CardContent className="text-center py-8">
-            <p className="text-muted-foreground">Restavracija ni najdena.</p>
+            <p className="text-muted-foreground mb-4">Vam ni dodeljena nobena restavracija.</p>
+            <p className="text-sm text-muted-foreground">Kontaktirajte administratorja sistema za dodelitev restavracije.</p>
           </CardContent>
         </Card>
       </div>
