@@ -39,8 +39,10 @@ export const RestaurantOperatingHours: React.FC<RestaurantOperatingHoursProps> =
           <Input
             id="delovni_cas_od"
             type="time"
+            step="900"
             value={restaurant.delovni_cas_od?.substring(0, 5) || ''}
             onChange={(e) => onUpdate({ delovni_cas_od: e.target.value })}
+            className="[&::-webkit-datetime-edit-ampm-field]:hidden"
           />
         </div>
 
@@ -49,8 +51,10 @@ export const RestaurantOperatingHours: React.FC<RestaurantOperatingHoursProps> =
           <Input
             id="delovni_cas_do"
             type="time"
+            step="900"
             value={restaurant.delovni_cas_do?.substring(0, 5) || ''}
             onChange={(e) => onUpdate({ delovni_cas_do: e.target.value })}
+            className="[&::-webkit-datetime-edit-ampm-field]:hidden"
           />
         </div>
       </CardContent>
