@@ -1,0 +1,218 @@
+import { useState, useEffect } from 'react';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
+import { Profil, UserRole } from '@/types/database';
+import { useToast } from '@/hooks/use-toast';
+
+export interface AuthUser extends Profil {
+  restavracija_id?: string;
+}
+
+interface UseAuthReturn {
+  user: AuthUser | null;
+  session: Session | null;
+  isLoading: boolean;
+  signUp: (email: string, password: string, ime: string, priimek: string, telefon?: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
+}
+
+export const useAuth = (): UseAuthReturn => {
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  // Cleanup auth state
+  const cleanupAuthState = () => {
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+        localStorage.removeItem(key);
+      }
+    });
+  };
+
+  // Load user profile
+  const loadUserProfile = async (userId: string) => {
+    try {
+      const { data: profil, error } = await supabase
+        .from('profili')
+        .select(`
+          *,
+          admin_restavracije (
+            restavracija_id,
+            restavracije (
+              id,
+              naziv
+            )
+          )
+        `)
+        .eq('user_id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error loading user profile:', error);
+        return null;
+      }
+
+      // If user is admin_restavracije, add restavracija_id
+      const authUser: AuthUser = {
+        ...profil,
+        restavracija_id: profil.admin_restavracije?.[0]?.restavracija_id
+      };
+
+      return authUser;
+    } catch (error) {
+      console.error('Error in loadUserProfile:', error);
+      return null;
+    }
+  };
+
+  // Initialize auth state
+  useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id);
+        setSession(session);
+        
+        if (session?.user) {
+          // Defer profile loading
+          setTimeout(async () => {
+            const profile = await loadUserProfile(session.user.id);
+            setUser(profile);
+            setIsLoading(false);
+          }, 0);
+        } else {
+          setUser(null);
+          setIsLoading(false);
+        }
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) {
+        loadUserProfile(session.user.id).then((profile) => {
+          setUser(profile);
+          setIsLoading(false);
+        });
+      } else {
+        setIsLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const signUp = async (email: string, password: string, ime: string, priimek: string, telefon?: string) => {
+    try {
+      setIsLoading(true);
+      cleanupAuthState();
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            ime,
+            priimek,
+            telefon: telefon || null
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        toast({
+          title: "Registracija uspešna!",
+          description: "Dobrodošli v MalcaTime aplikaciji.",
+        });
+        // Trigger will automatically create profile
+      }
+    } catch (error: any) {
+      console.error('Sign up error:', error);
+      toast({
+        title: "Napaka pri registraciji",
+        description: error.message || "Prišlo je do napake pri registraciji.",
+        variant: "destructive"
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const signIn = async (email: string, password: string) => {
+    try {
+      setIsLoading(true);
+      cleanupAuthState();
+
+      // Attempt global sign out first
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+      } catch (err) {
+        // Continue even if this fails
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        toast({
+          title: "Prijava uspešna!",
+          description: "Dobrodošli nazaj!",
+        });
+        // Force page reload for clean state
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 500);
+      }
+    } catch (error: any) {
+      console.error('Sign in error:', error);
+      toast({
+        title: "Napaka pri prijavi",
+        description: error.message || "Preverite email in geslo.",
+        variant: "destructive"
+      });
+      setIsLoading(false);
+      throw error;
+    }
+  };
+
+  const signOut = async () => {
+    try {
+      cleanupAuthState();
+      await supabase.auth.signOut({ scope: 'global' });
+      toast({
+        title: "Odjava uspešna",
+        description: "Uspešno ste se odjavili.",
+      });
+      // Force page reload
+      window.location.href = '/';
+    } catch (error: any) {
+      console.error('Sign out error:', error);
+      toast({
+        title: "Napaka pri odjavi",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  return {
+    user,
+    session,
+    isLoading,
+    signUp,
+    signIn,
+    signOut
+  };
+};

@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowDown, ShoppingCart } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useCart } from '@/contexts/CartContext';
+import { useAuthContext } from '@/contexts/AuthContext';
+import { useCartContext } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
@@ -13,8 +13,8 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ title, showCart = false, onCartClick }) => {
-  const { user, odjava } = useAuth();
-  const { getTotalItems } = useCart();
+  const { user, signOut } = useAuthContext();
+  const { getTotalItems } = useCartContext();
 
   return (
     <motion.header 
@@ -76,7 +76,7 @@ export const Header: React.FC<HeaderProps> = ({ title, showCart = false, onCartC
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={odjava}
+                  onClick={signOut}
                   className="text-muted-foreground hover:text-foreground"
                 >
                   Odjava

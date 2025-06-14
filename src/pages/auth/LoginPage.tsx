@@ -1,57 +1,58 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from '@/hooks/use-toast';
+import { Loader2, Mail, Lock } from 'lucide-react';
+import { useAuthContext } from '@/contexts/AuthContext';
 
 interface LoginPageProps {
   onSwitchToRegister: () => void;
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
-  const [email, setEmail] = useState('');
-  const [geslo, setGeslo] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const { prijava, isLoading } = useAuth();
+  const { signIn, isLoading } = useAuthContext();
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  const validateForm = () => {
+    const newErrors: { [key: string]: string } = {};
+
+    if (!formData.email) {
+      newErrors.email = 'Email je obvezen';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Email ni veljaven';
+    }
+
+    if (!formData.password) {
+      newErrors.password = 'Geslo je obvezno';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !geslo) {
-      toast({
-        title: "Napaka",
-        description: "Prosimo, vnesite email in geslo.",
-        variant: "destructive"
-      });
-      return;
-    }
+    if (!validateForm()) return;
 
     try {
-      await prijava(email, geslo);
-      toast({
-        title: "Uspešna prijava",
-        description: "Dobrodošli v MalcaTime!",
-      });
+      await signIn(formData.email, formData.password);
     } catch (error) {
-      toast({
-        title: "Napaka pri prijavi",
-        description: "Preverite email in geslo ter poskusite znova.",
-        variant: "destructive"
-      });
+      // Error handling is done in the hook
     }
   };
 
   const handleDemoLogin = (role: 'uporabnik' | 'admin') => {
     if (role === 'uporabnik') {
-      setEmail('test@uporabnik.si');
-      setGeslo('123456');
+      setFormData({ email: 'test@uporabnik.si', password: '123456' });
     } else {
-      setEmail('admin@restavracija.si');
-      setGeslo('123456');
+      setFormData({ email: 'admin@restavracija.si', password: '123456' });
     }
   };
 
@@ -62,76 +63,74 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md"
       >
-        <Card className="shadow-lg">
-          <CardHeader className="text-center">
+        <Card className="shadow-lg border-border">
+          <CardHeader className="text-center space-y-4">
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2 }}
-              className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4"
+              className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto"
             >
               <span className="text-primary-foreground font-bold text-2xl">M</span>
             </motion.div>
-            <CardTitle className="text-2xl font-bold">MalcaTime</CardTitle>
-            <CardDescription>
-              Prijavite se v svoj račun
-            </CardDescription>
+            <div>
+              <CardTitle className="text-2xl font-bold text-foreground">MalcaTime</CardTitle>
+              <CardDescription className="text-muted-foreground mt-2">
+                Prijavite se v svoj račun
+              </CardDescription>
+            </div>
           </CardHeader>
 
           <CardContent className="space-y-6">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="vase.ime@email.si"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="vase.ime@email.com"
+                    className="pl-10"
+                    value={formData.email}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    disabled={isLoading}
+                  />
+                </div>
+                {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="geslo">Geslo</Label>
+                <Label htmlFor="password">Geslo</Label>
                 <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
-                    id="geslo"
-                    type={showPassword ? "text" : "password"}
+                    id="password"
+                    type="password"
                     placeholder="Vnesite geslo"
-                    value={geslo}
-                    onChange={(e) => setGeslo(e.target.value)}
-                    required
+                    className="pl-10"
+                    value={formData.password}
+                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                    disabled={isLoading}
                   />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </Button>
                 </div>
+                {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
               </div>
 
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={isLoading}
               >
-                <Button 
-                  type="submit" 
-                  className="w-full" 
-                  size="lg"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Prijavljam..." : "Prijava"}
-                </Button>
-              </motion.div>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Prijavljanje...
+                  </>
+                ) : (
+                  'Prijava'
+                )}
+              </Button>
             </form>
 
             <div className="space-y-3">
@@ -173,6 +172,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
                   variant="link"
                   className="p-0 h-auto font-normal text-primary hover:underline"
                   onClick={onSwitchToRegister}
+                  disabled={isLoading}
                 >
                   Registrirajte se
                 </Button>

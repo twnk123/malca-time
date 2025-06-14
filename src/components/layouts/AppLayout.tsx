@@ -1,23 +1,37 @@
 import React, { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { RegisterPage } from '@/pages/auth/RegisterPage';
 import { RestaurantsPage } from '@/pages/user/RestaurantsPage';
 import { MenuPage } from '@/pages/user/MenuPage';
 import { AdminMenuPage } from '@/pages/admin/AdminMenuPage';
 import { AdminOrdersPage } from '@/pages/admin/AdminOrdersPage';
-import { Restavracija } from '@/data/mockData';
+import { Restavracija } from '@/types/database';
 
 type AuthMode = 'login' | 'register';
 type UserView = 'restaurants' | 'menu';
 type AdminView = 'menu' | 'orders';
 
 export const AppLayout: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuthContext();
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restavracija | null>(null);
   const [userView, setUserView] = useState<UserView>('restaurants');
   const [adminView, setAdminView] = useState<AdminView>('menu');
+
+  // Show loading screen while checking auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto animate-pulse">
+            <span className="text-primary-foreground font-bold text-2xl">M</span>
+          </div>
+          <p className="text-muted-foreground">Nalagam...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Auth stranice
   if (!user) {
@@ -28,30 +42,6 @@ export const AppLayout: React.FC = () => {
     } else {
       return (
         <RegisterPage onSwitchToLogin={() => setAuthMode('login')} />
-      );
-    }
-  }
-
-  // Uporabniške stranice
-  if (user.vloga === 'uporabnik') {
-    if (userView === 'restaurants' || !selectedRestaurant) {
-      return (
-        <RestaurantsPage
-          onSelectRestaurant={(restaurant) => {
-            setSelectedRestaurant(restaurant);
-            setUserView('menu');
-          }}
-        />
-      );
-    } else if (userView === 'menu' && selectedRestaurant) {
-      return (
-        <MenuPage
-          restaurant={selectedRestaurant}
-          onBack={() => {
-            setUserView('restaurants');
-            setSelectedRestaurant(null);
-          }}
-        />
       );
     }
   }
@@ -92,6 +82,30 @@ export const AppLayout: React.FC = () => {
         {adminView === 'menu' ? <AdminMenuPage /> : <AdminOrdersPage />}
       </div>
     );
+  }
+  
+  // Uporabniške stranice
+  if (user.vloga === 'uporabnik') {
+    if (userView === 'restaurants' || !selectedRestaurant) {
+      return (
+        <RestaurantsPage
+          onSelectRestaurant={(restaurant) => {
+            setSelectedRestaurant(restaurant);
+            setUserView('menu');
+          }}
+        />
+      );
+    } else if (userView === 'menu' && selectedRestaurant) {
+      return (
+        <MenuPage
+          restaurant={selectedRestaurant}
+          onBack={() => {
+            setUserView('restaurants');
+            setSelectedRestaurant(null);
+          }}
+        />
+      );
+    }
   }
 
   return null;
