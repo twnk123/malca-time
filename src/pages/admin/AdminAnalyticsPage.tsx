@@ -121,7 +121,7 @@ ${reportData.popularDishes.map((dish, i) =>
       <Header title="Analitika" />
       
       <div className="container mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col gap-4 mb-6 md:flex-row md:items-center md:justify-between">
           <div>
             <h2 className="text-xl font-semibold text-foreground">
               Analitični pregled
@@ -131,9 +131,9 @@ ${reportData.popularDishes.map((dish, i) =>
             </p>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <Select value={selectedPeriod} onValueChange={(value: 'daily' | 'weekly' | 'monthly') => setSelectedPeriod(value)}>
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-full sm:w-32">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -146,10 +146,10 @@ ${reportData.popularDishes.map((dish, i) =>
             <Button
               variant="outline"
               onClick={() => generatePDF(selectedPeriod)}
-              className="flex items-center gap-2"
+              className="flex items-center justify-center gap-2 w-full sm:w-auto"
             >
               <Download className="h-4 w-4" />
-              Izvozi PDF
+              <span className="sm:inline">Izvozi PDF</span>
             </Button>
           </div>
         </div>
