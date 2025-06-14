@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { useOrders } from '@/hooks/useOrders';
 import { OrderStatus } from '@/types/database';
 
@@ -21,7 +21,7 @@ const stanjaMap = {
 };
 
 export const AdminOrdersPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const { orders, isLoading, updateOrderStatus } = useOrders(user?.restavracija_id);
   const [selectedStanje, setSelectedStanje] = useState<string>('vsa');
 

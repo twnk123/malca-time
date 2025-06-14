@@ -48,7 +48,7 @@ export const AdminMenuPage: React.FC = () => {
   // Fetch admin's restaurant data
   useEffect(() => {
     const fetchAdminData = async () => {
-      if (!user?.id) return;
+      if (!user?.user_id) return;
 
       try {
         // Get admin's restaurant
@@ -58,7 +58,7 @@ export const AdminMenuPage: React.FC = () => {
             restavracija_id,
             restavracije!inner(*)
           `)
-          .eq('admin_id', user.id)
+          .eq('admin_id', user.user_id)
           .single();
 
         if (adminError) throw adminError;
@@ -106,7 +106,7 @@ export const AdminMenuPage: React.FC = () => {
     };
 
     fetchAdminData();
-  }, [user?.id]);
+  }, [user?.user_id]);
 
   const handleSaveJed = async () => {
     if (!jedForm.ime || !jedForm.opis || !jedForm.cena || !jedForm.kategorija_id) {

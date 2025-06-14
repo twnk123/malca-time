@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/contexts/AuthContext';
 
 interface CartSheetProps {
   open: boolean;
@@ -21,7 +21,7 @@ export const CartSheet: React.FC<CartSheetProps> = ({ open, onOpenChange }) => {
   const { items, updateQuantity, removeFromCart, getTotalPrice, clearCart } = useCart();
   const [komentar, setKomentar] = useState('');
   const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
+  const { user } = useAuthContext();
 
   const handleOrderSubmit = async () => {
     if (items.length === 0) {
@@ -52,7 +52,7 @@ export const CartSheet: React.FC<CartSheetProps> = ({ open, onOpenChange }) => {
       const { data: narocilo, error: narocilError } = await supabase
         .from('narocila')
         .insert({
-          uporabnik_id: user.id,
+          uporabnik_id: user.user_id,
           restavracija_id: restevracjaId,
           skupna_cena: getTotalPrice(),
           opomba: komentar.trim() || null,
