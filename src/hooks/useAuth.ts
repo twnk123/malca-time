@@ -48,10 +48,30 @@ export const useAuth = (): UseAuthReturn => {
         return null;
       }
 
-      // For now, return profile without restaurant connection
+      // If user is admin_restavracije, get restaurant connection
+      let restavracija_id = undefined;
+      if (profil.vloga === 'admin_restavracije') {
+        try {
+          const { data: adminData, error: adminError } = await supabase
+            .from('admin_restavracije')
+            .select('restavracija_id')
+            .eq('admin_id', userId)
+            .maybeSingle();
+          
+          if (adminError) {
+            console.error('Error loading admin restaurant:', adminError);
+          } else if (adminData) {
+            restavracija_id = adminData.restavracija_id;
+          }
+        } catch (error) {
+          console.error('Error in admin restaurant query:', error);
+        }
+      }
+
+      // Create auth user with restaurant connection
       const authUser: AuthUser = {
         ...profil,
-        restavracija_id: undefined
+        restavracija_id
       };
 
       return authUser;
