@@ -14,9 +14,10 @@ type Restavracija = Database['public']['Tables']['restavracije']['Row'];
 
 interface RestaurantsPageProps {
   onSelectRestaurant: (restaurant: Restavracija) => void;
+  onProfileClick: () => void;
 }
 
-export const RestaurantsPage: React.FC<RestaurantsPageProps> = ({ onSelectRestaurant }) => {
+export const RestaurantsPage: React.FC<RestaurantsPageProps> = ({ onSelectRestaurant, onProfileClick }) => {
   const [cartOpen, setCartOpen] = useState(false);
     const { restaurants, isLoading, error } = useRestaurants();
 
@@ -30,6 +31,7 @@ export const RestaurantsPage: React.FC<RestaurantsPageProps> = ({ onSelectRestau
         title="Restavracije" 
         showCart={true} 
         onCartClick={() => setCartOpen(true)} 
+        onProfileClick={onProfileClick}
       />
       
       <div className="container mx-auto px-4 py-6">

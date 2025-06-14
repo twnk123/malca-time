@@ -118,8 +118,8 @@ export const useRestaurantData = (userId?: string) => {
 
       if (error) throw error;
 
-      // Update local state with the saved data
-      setRestaurant(prev => prev ? { ...prev, ...updatedData } : prev);
+      // Refetch data to ensure UI reflects database state
+      await fetchRestaurantData();
 
       toast({
         title: "Uspešno shranjeno",
@@ -172,12 +172,18 @@ export const useRestaurantData = (userId?: string) => {
     fetchRestaurantData();
   }, [userId]);
 
+  // Add effect to refetch data after successful save
+  const refetchData = () => {
+    fetchRestaurantData();
+  };
+
   return {
     restaurant,
     loading,
     saving,
     updateRestaurant,
     saveRestaurant,
-    handleLogoUpload
+    handleLogoUpload,
+    refetchData
   };
 };

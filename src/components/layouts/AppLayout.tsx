@@ -144,6 +144,7 @@ export const AppLayout: React.FC = () => {
             setSelectedRestaurant(restaurant);
             setUserView('menu');
           }}
+          onProfileClick={() => setUserView('profile')}
         />
       );
     } else if (userView === 'menu' && selectedRestaurant) {

@@ -14,7 +14,7 @@ interface HeaderProps {
   onProfileClick?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ title, showCart = false, onCartClick }) => {
+export const Header: React.FC<HeaderProps> = ({ title, showCart = false, onCartClick, onProfileClick }) => {
   const { user, signOut } = useAuthContext();
   const { getTotalItems } = useCart();
 
@@ -48,6 +48,22 @@ export const Header: React.FC<HeaderProps> = ({ title, showCart = false, onCartC
           <div className="flex items-center space-x-2">
             <ThemeToggle />
             
+            {onProfileClick && (
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={onProfileClick}
+                  className="relative"
+                >
+                  <User className="h-5 w-5" />
+                </Button>
+              </motion.div>
+            )}
+
             {showCart && (
               <motion.div
                 whileHover={{ scale: 1.05 }}
