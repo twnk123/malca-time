@@ -48,29 +48,32 @@ export const useAuth = (): UseAuthReturn => {
         return null;
       }
 
-      // If user is admin_restavracije, get restaurant connection
+      // Check if user is admin by looking at admin_restavracije table
       let restavracija_id = undefined;
-      if (profil.vloga === 'admin_restavracije') {
-        try {
-          const { data: adminData, error: adminError } = await supabase
-            .from('admin_restavracije')
-            .select('restavracija_id')
-            .eq('admin_id', userId)
-            .maybeSingle();
-          
-          if (adminError) {
-            console.error('Error loading admin restaurant:', adminError);
-          } else if (adminData) {
-            restavracija_id = adminData.restavracija_id;
-          }
-        } catch (error) {
-          console.error('Error in admin restaurant query:', error);
+      let actualRole = profil.vloga; // Start with profile role
+      
+      try {
+        const { data: adminData, error: adminError } = await supabase
+          .from('admin_restavracije')
+          .select('restavracija_id')
+          .eq('admin_id', userId)
+          .maybeSingle();
+        
+        if (adminError) {
+          console.error('Error loading admin restaurant:', adminError);
+        } else if (adminData) {
+          // If user has admin_restavracije record, they are admin regardless of profile role
+          actualRole = 'admin_restavracije';
+          restavracija_id = adminData.restavracija_id;
         }
+      } catch (error) {
+        console.error('Error in admin restaurant query:', error);
       }
 
-      // Create auth user with restaurant connection
+      // Create auth user with actual role and restaurant connection
       const authUser: AuthUser = {
         ...profil,
+        vloga: actualRole, // Use determined role
         restavracija_id
       };
 
