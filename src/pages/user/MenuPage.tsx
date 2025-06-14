@@ -67,6 +67,7 @@ export const MenuPage: React.FC<MenuPageProps> = ({ restaurant, onBack, onProfil
         title={restaurant.naziv} 
         showCart={true} 
         onCartClick={() => setCartOpen(true)} 
+        onProfileClick={onProfileClick}
       />
 
       {/* Restaurant Header */}
