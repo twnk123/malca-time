@@ -14,8 +14,8 @@ export const isRestaurantOpen = (
   const now = currentTime || new Date();
   const today = format(now, 'yyyy-MM-dd');
   
-  // Handle both HH:mm and HH:mm:ss formats
-  const formatTime = (timeStr: string) => timeStr.length === 5 ? timeStr : timeStr.substring(0, 5);
+  // Remove seconds and keep only HH:mm format
+  const formatTime = (timeStr: string) => timeStr.substring(0, 5);
   
   const openTime = parse(`${today} ${formatTime(delovniCasOd)}`, 'yyyy-MM-dd HH:mm', new Date());
   const closeTime = parse(`${today} ${formatTime(delovniCasDo)}`, 'yyyy-MM-dd HH:mm', new Date());
@@ -31,8 +31,8 @@ export const getAvailablePickupTimes = (
   const now = currentTime || new Date();
   const today = format(now, 'yyyy-MM-dd');
   
-  // Handle both HH:mm and HH:mm:ss formats
-  const formatTime = (timeStr: string) => timeStr.length === 5 ? timeStr : timeStr.substring(0, 5);
+  // Remove seconds and keep only HH:mm format
+  const formatTime = (timeStr: string) => timeStr.substring(0, 5);
   
   // Restaurant opening and closing times today
   const openTime = parse(`${today} ${formatTime(delovniCasOd)}`, 'yyyy-MM-dd HH:mm', new Date());
@@ -97,8 +97,8 @@ export const getOrderingStatus = (
   const now = currentTime || new Date();
   const today = format(now, 'yyyy-MM-dd');
   
-  // Handle both HH:mm and HH:mm:ss formats
-  const formatTime = (timeStr: string) => timeStr.length === 5 ? timeStr : timeStr.substring(0, 5);
+  // Remove seconds and keep only HH:mm format
+  const formatTime = (timeStr: string) => timeStr.substring(0, 5);
   
   const closeTime = parse(`${today} ${formatTime(delovniCasDo)}`, 'yyyy-MM-dd HH:mm', new Date());
   const closingSoonTime = addMinutes(closeTime, -60); // 1 hour before closing
