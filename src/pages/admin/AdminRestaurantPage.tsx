@@ -84,21 +84,53 @@ export const AdminRestaurantPage: React.FC = () => {
     try {
       setSaving(true);
 
+      // Validate required fields
+      if (!restaurant.naziv.trim()) {
+        toast({
+          title: "Napaka",
+          description: "Naziv restavracije je obvezen.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Validate time format and convert to 24-hour if needed
+      const formatTime = (timeStr: string) => {
+        if (!timeStr) return timeStr;
+        
+        // If already in HH:MM format, return as is
+        if (/^\d{2}:\d{2}$/.test(timeStr)) {
+          return timeStr + ':00';
+        }
+        
+        // If in HH:MM:SS format, return as is
+        if (/^\d{2}:\d{2}:\d{2}$/.test(timeStr)) {
+          return timeStr;
+        }
+        
+        return timeStr;
+      };
+
+      const updatedData = {
+        naziv: restaurant.naziv.trim(),
+        opis: restaurant.opis?.trim() || '',
+        lokacija: restaurant.lokacija?.trim() || '',
+        kontakt: restaurant.kontakt?.trim() || '',
+        email: restaurant.email?.trim() || '',
+        delovni_cas_od: formatTime(restaurant.delovni_cas_od),
+        delovni_cas_do: formatTime(restaurant.delovni_cas_do),
+        logo_url: restaurant.logo_url
+      };
+
       const { error } = await supabase
         .from('restavracije')
-        .update({
-          naziv: restaurant.naziv,
-          opis: restaurant.opis,
-          lokacija: restaurant.lokacija,
-          kontakt: restaurant.kontakt,
-          email: restaurant.email,
-          delovni_cas_od: restaurant.delovni_cas_od,
-          delovni_cas_do: restaurant.delovni_cas_do,
-          logo_url: restaurant.logo_url
-        })
+        .update(updatedData)
         .eq('id', restaurant.id);
 
       if (error) throw error;
+
+      // Update local state with the saved data
+      setRestaurant(prev => prev ? { ...prev, ...updatedData } : prev);
 
       toast({
         title: "Uspešno shranjeno",
@@ -120,17 +152,28 @@ export const AdminRestaurantPage: React.FC = () => {
     if (!restaurant) return;
 
     try {
+      // Update local state immediately
       setRestaurant(prev => prev ? { ...prev, logo_url: url } : prev);
       
+      // Save to database
+      const { error } = await supabase
+        .from('restavracije')
+        .update({ logo_url: url })
+        .eq('id', restaurant.id);
+
+      if (error) throw error;
+
       toast({
         title: "Slika naložena",
-        description: "Logotip restavracije je bil uspešno naložen."
+        description: "Logotip restavracije je bil uspešno naložen in shranjen."
       });
     } catch (error) {
       console.error('Error updating logo:', error);
+      // Revert local state on error
+      setRestaurant(prev => prev ? { ...prev, logo_url: restaurant.logo_url } : prev);
       toast({
         title: "Napaka",
-        description: "Prišlo je do napake pri posodabljanju slike.",
+        description: "Prišlo je do napake pri shranjevanju slike.",
         variant: "destructive"
       });
     }
@@ -254,9 +297,8 @@ export const AdminRestaurantPage: React.FC = () => {
                 <Input
                   id="delovni_cas_od"
                   type="time"
-                  value={restaurant.delovni_cas_od}
+                  value={restaurant.delovni_cas_od?.substring(0, 5) || ''}
                   onChange={(e) => setRestaurant(prev => prev ? {...prev, delovni_cas_od: e.target.value} : prev)}
-                  step="300"
                 />
               </div>
 
@@ -265,9 +307,8 @@ export const AdminRestaurantPage: React.FC = () => {
                 <Input
                   id="delovni_cas_do"
                   type="time"
-                  value={restaurant.delovni_cas_do}
+                  value={restaurant.delovni_cas_do?.substring(0, 5) || ''}
                   onChange={(e) => setRestaurant(prev => prev ? {...prev, delovni_cas_do: e.target.value} : prev)}
-                  step="300"
                 />
               </div>
             </CardContent>
