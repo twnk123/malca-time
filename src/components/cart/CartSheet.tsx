@@ -9,6 +9,8 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface CartSheetProps {
   open: boolean;
@@ -18,8 +20,10 @@ interface CartSheetProps {
 export const CartSheet: React.FC<CartSheetProps> = ({ open, onOpenChange }) => {
   const { items, updateQuantity, removeFromCart, getTotalPrice, clearCart } = useCart();
   const [komentar, setKomentar] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
 
-  const handleOrderSubmit = () => {
+  const handleOrderSubmit = async () => {
     if (items.length === 0) {
       toast({
         title: "Košarica je prazna",
@@ -29,26 +33,82 @@ export const CartSheet: React.FC<CartSheetProps> = ({ open, onOpenChange }) => {
       return;
     }
 
-    // Mock oddaja naročila
-    const opisNarocila = komentar.trim() ? ` (${komentar.trim()})` : '';
-    toast({
-      title: "Naročilo oddano!",
-      description: `Vaše naročilo v vrednosti ${getTotalPrice().toFixed(2)}€ je bilo uspešno oddano.${opisNarocila}`,
-    });
-    
-    clearCart();
-    setKomentar('');
-    onOpenChange(false);
+    if (!user) {
+      toast({
+        title: "Niste prijavljeni",
+        description: "Za oddajo naročila se morate prijaviti.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Get restaurant ID from first item
+      const restevracjaId = items[0].restavracija_id;
+      
+      // Create order
+      const { data: narocilo, error: narocilError } = await supabase
+        .from('narocila')
+        .insert({
+          uporabnik_id: user.id,
+          restavracija_id: restevracjaId,
+          skupna_cena: getTotalPrice(),
+          opomba: komentar.trim() || null,
+          cas_prevzema: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutes from now
+          status: 'novo'
+        })
+        .select()
+        .single();
+
+      if (narocilError) throw narocilError;
+
+      // Create order items
+      const postavkeNarocila = items.map(item => ({
+        narocilo_id: narocilo.id,
+        jed_id: item.id,
+        kolicina: item.kolicina,
+        cena_na_kos: item.cena,
+        opomba: null
+      }));
+
+      const { error: postavkeError } = await supabase
+        .from('postavke_narocila')
+        .insert(postavkeNarocila);
+
+      if (postavkeError) throw postavkeError;
+
+      const opisNarocila = komentar.trim() ? ` (${komentar.trim()})` : '';
+      toast({
+        title: "Naročilo oddano!",
+        description: `Vaše naročilo v vrednosti ${getTotalPrice().toFixed(2)}€ je bilo uspešno oddano.${opisNarocila}`,
+      });
+      
+      clearCart();
+      setKomentar('');
+      onOpenChange(false);
+
+    } catch (error) {
+      console.error('Error creating order:', error);
+      toast({
+        title: "Napaka pri oddaji naročila",
+        description: "Prišlo je do napake. Poskusite znova.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-lg">
+      <SheetContent className="w-full sm:max-w-lg flex flex-col max-h-screen">
         <SheetHeader>
           <SheetTitle className="text-xl font-bold">Vaša košarica</SheetTitle>
         </SheetHeader>
 
-        <div className="flex flex-col h-full mt-6">
+        <div className="flex flex-col h-[calc(100vh-8rem)] mt-6">
           {items.length === 0 ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
@@ -67,7 +127,7 @@ export const CartSheet: React.FC<CartSheetProps> = ({ open, onOpenChange }) => {
             </div>
           ) : (
             <>
-              <ScrollArea className="flex-1 -mx-6 px-6">
+              <ScrollArea className="flex-1 -mx-6 px-6 max-h-[50vh]">
                 <AnimatePresence>
                   {items.map((item, index) => (
                     <motion.div
@@ -129,7 +189,7 @@ export const CartSheet: React.FC<CartSheetProps> = ({ open, onOpenChange }) => {
                 </AnimatePresence>
               </ScrollArea>
 
-              <div className="mt-6 space-y-4">
+              <div className="mt-6 space-y-4 pb-4 sticky bottom-0 bg-background border-t pt-4">
                 <Separator />
                 
                 <div className="flex justify-between items-center">
@@ -161,8 +221,9 @@ export const CartSheet: React.FC<CartSheetProps> = ({ open, onOpenChange }) => {
                     className="w-full" 
                     size="lg"
                     onClick={handleOrderSubmit}
+                    disabled={loading}
                   >
-                    Oddaj naročilo
+                    {loading ? 'Oddajam...' : 'Oddaj naročilo'}
                   </Button>
                 </motion.div>
               </div>
