@@ -40,6 +40,7 @@ export const AdminRestaurantPage: React.FC = () => {
       setLoading(true);
       
       // Get restaurant for this admin
+      console.log('Current user:', user); // Debug log
       const { data: adminData, error: adminError } = await supabase
         .from('admin_restavracije')
         .select('restavracija_id')
@@ -286,11 +287,11 @@ export const AdminRestaurantPage: React.FC = () => {
                 onUpload={handleLogoUpload}
                 bucket="restaurant-logos"
                 maxSize={1}
-                acceptedFormats={['.jpg', '.jpeg', '.png']}
+                acceptedFormats={['.jpg', '.jpeg', '.png', '.webp']}
                 className="w-full h-48"
               />
-              <p className="text-xs text-muted-foreground">
-                Logotip mora biti PNG ali JPG, do 1MB, idealna dimenzija 300x300px.
+              <p className="text-xs text-muted-foreground mt-2">
+                Logotip mora biti PNG, JPG ali WebP, do 1MB, optimalna dimenzija 300x300px.
               </p>
             </CardContent>
           </Card>

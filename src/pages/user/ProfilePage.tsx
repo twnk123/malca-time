@@ -81,7 +81,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
           ),
           restavracije (naziv)
         `)
-        .eq('uporabnik_id', user?.id)
+        .eq('uporabnik_id', user?.user_id)
         .order('created_at', { ascending: false });
 
       if (ordersError) throw ordersError;
@@ -96,7 +96,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
             restavracije!inner (naziv)
           )
         `)
-        .eq('uporabnik_id', user?.id);
+        .eq('uporabnik_id', user?.user_id);
 
       if (favoritesError) throw favoritesError;
 

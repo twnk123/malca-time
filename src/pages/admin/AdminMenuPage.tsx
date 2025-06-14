@@ -51,6 +51,7 @@ export const AdminMenuPage: React.FC = () => {
   // Fetch admin's restaurant data
   useEffect(() => {
     const fetchAdminData = async () => {
+      console.log('Current user in AdminMenuPage:', user); // Debug log
       if (!user?.user_id) return;
 
       try {
@@ -383,11 +384,11 @@ export const AdminMenuPage: React.FC = () => {
                     onUpload={(url) => setJedForm(prev => ({ ...prev, slika_url: url }))}
                     bucket="food-images"
                     maxSize={2}
-                    acceptedFormats={['.jpg', '.jpeg', '.png']}
+                    acceptedFormats={['.jpg', '.jpeg', '.png', '.webp']}
                     className="w-full h-32"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Slika mora biti v formatu JPG ali PNG, največja velikost 2MB, priporočena dimenzija 800x800px.
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Slika mora biti JPG, PNG ali WebP, največ 2MB, optimalna dimenzija 800x800px.
                   </p>
                 </div>
 
