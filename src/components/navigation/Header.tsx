@@ -1,15 +1,17 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowDown, ShoppingCart } from 'lucide-react';
+import { ArrowDown, ShoppingCart, User } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 interface HeaderProps {
   title: string;
   showCart?: boolean;
   onCartClick?: () => void;
+  onProfileClick?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ title, showCart = false, onCartClick }) => {
@@ -44,6 +46,8 @@ export const Header: React.FC<HeaderProps> = ({ title, showCart = false, onCartC
           </div>
 
           <div className="flex items-center space-x-2">
+            <ThemeToggle />
+            
             {showCart && (
               <motion.div
                 whileHover={{ scale: 1.05 }}

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Plus, Minus, Star, Clock, MapPin, Heart } from 'lucide-react';
 import { Header } from '@/components/navigation/Header';
 import { CartSheet } from '@/components/cart/CartSheet';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useCart } from '@/contexts/CartContext';
 import { useMenu } from '@/hooks/useMenu';
 import { Button } from '@/components/ui/button';

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Edit, Trash2, Save, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, Upload, Percent, Euro } from 'lucide-react';
 import { Header } from '@/components/navigation/Header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { ImageUpload } from '@/components/ui/image-upload';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -25,6 +26,7 @@ interface JedForm {
   cena: string;
   kategorija_id: string;
   na_voljo: boolean;
+  slika_url?: string;
 }
 
 const defaultJedForm: JedForm = {
@@ -32,7 +34,8 @@ const defaultJedForm: JedForm = {
   opis: '',
   cena: '',
   kategorija_id: '',
-  na_voljo: true
+  na_voljo: true,
+  slika_url: ''
 };
 
 export const AdminMenuPage: React.FC = () => {
@@ -138,7 +141,8 @@ export const AdminMenuPage: React.FC = () => {
             opis: jedForm.opis,
             cena,
             kategorija_id: jedForm.kategorija_id,
-            na_voljo: jedForm.na_voljo
+            na_voljo: jedForm.na_voljo,
+            slika_url: jedForm.slika_url
           })
           .eq('id', editingJed.id);
 
@@ -166,7 +170,8 @@ export const AdminMenuPage: React.FC = () => {
             kategorija_id: jedForm.kategorija_id,
             restavracija_id: restavracjaId,
             na_voljo: jedForm.na_voljo,
-            vrstni_red: jedi.length + 1
+            vrstni_red: jedi.length + 1,
+            slika_url: jedForm.slika_url
           })
           .select()
           .single();
@@ -200,7 +205,8 @@ export const AdminMenuPage: React.FC = () => {
       opis: jed.opis || '',
       cena: jed.cena.toString(),
       kategorija_id: jed.kategorija_id,
-      na_voljo: jed.na_voljo
+      na_voljo: jed.na_voljo,
+      slika_url: jed.slika_url || ''
     });
     setDialogOpen(true);
   };
@@ -368,6 +374,21 @@ export const AdminMenuPage: React.FC = () => {
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Slika jedi</Label>
+                  <ImageUpload
+                    currentImage={jedForm.slika_url}
+                    onUpload={(url) => setJedForm(prev => ({ ...prev, slika_url: url }))}
+                    bucket="food-images"
+                    maxSize={2}
+                    acceptedFormats={['.jpg', '.jpeg', '.png']}
+                    className="w-full h-32"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Slika mora biti v formatu JPG ali PNG, največja velikost 2MB, priporočena dimenzija 800x800px.
+                  </p>
                 </div>
 
                 <div className="flex items-center space-x-2">

@@ -289,6 +289,9 @@ export const AdminRestaurantPage: React.FC = () => {
                 acceptedFormats={['.jpg', '.jpeg', '.png']}
                 className="w-full h-48"
               />
+              <p className="text-xs text-muted-foreground">
+                Logotip mora biti PNG ali JPG, do 1MB, idealna dimenzija 300x300px.
+              </p>
             </CardContent>
           </Card>
         </div>
