@@ -203,8 +203,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
         )}
       </div>
       
-      {/* Add spacing below component to prevent overlap */}
-      <div className="h-4" />
+      {/* Add substantial spacing below component to prevent overlap */}
+      <div className="h-8" />
     </TooltipProvider>
   );
 };
