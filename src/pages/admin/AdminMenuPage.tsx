@@ -316,14 +316,14 @@ export const AdminMenuPage: React.FC = () => {
               </motion.div>
             </DialogTrigger>
             
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
                   {editingJed ? 'Uredi jed' : 'Dodaj novo jed'}
                 </DialogTitle>
               </DialogHeader>
               
-              <div className="space-y-4">
+              <div className="space-y-6 py-4">
                 <div className="space-y-2">
                   <Label htmlFor="ime">Naziv jedi *</Label>
                   <Input
@@ -368,7 +368,7 @@ export const AdminMenuPage: React.FC = () => {
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-50">
                         {kategorije.map(kategorija => (
                           <SelectItem key={kategorija.id} value={kategorija.id}>
                             {kategorija.naziv}
@@ -389,7 +389,7 @@ export const AdminMenuPage: React.FC = () => {
                     acceptedFormats={['.jpg', '.jpeg', '.png', '.webp']}
                     className="w-full h-32"
                   />
-                  <p className="text-xs text-muted-foreground mt-2">
+                  <p className="text-xs text-muted-foreground">
                     Slika mora biti JPG, PNG ali WebP, največ 2MB, optimalna dimenzija 800x800px.
                   </p>
                 </div>
@@ -402,22 +402,22 @@ export const AdminMenuPage: React.FC = () => {
                   />
                   <Label htmlFor="na_voljo">Na voljo</Label>
                 </div>
+              </div>
 
-                <div className="flex space-x-2 pt-4">
-                  <Button 
-                    onClick={handleSaveJed}
-                    className="flex-1"
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    {editingJed ? 'Posodobi' : 'Dodaj'}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setDialogOpen(false)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
+              <div className="flex space-x-2 pt-4 border-t">
+                <Button 
+                  onClick={handleSaveJed}
+                  className="flex-1"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {editingJed ? 'Posodobi' : 'Dodaj'}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setDialogOpen(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
             </DialogContent>
           </Dialog>
