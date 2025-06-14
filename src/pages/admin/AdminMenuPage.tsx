@@ -379,7 +379,7 @@ export const AdminMenuPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <Label>Slika jedi</Label>
                   <ImageUpload
                     currentImage={jedForm.slika_url}
@@ -389,12 +389,12 @@ export const AdminMenuPage: React.FC = () => {
                     acceptedFormats={['.jpg', '.jpeg', '.png', '.webp']}
                     className="w-full h-32"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Slika mora biti JPG, PNG ali WebP, največ 2MB, optimalna dimenzija 800x800px.
+                  <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+                    Podprte so JPG, PNG in WebP datoteke do 2MB. Priporočena velikost je 800×800px.
                   </p>
                 </div>
 
-                <div className="flex items-center space-x-2 pt-5">
+                <div className="flex items-center space-x-2 pt-8 border-t border-border/50 mt-6">
                   <Switch
                     id="na_voljo"
                     checked={jedForm.na_voljo}
