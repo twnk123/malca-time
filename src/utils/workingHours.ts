@@ -14,8 +14,11 @@ export const isRestaurantOpen = (
   const now = currentTime || new Date();
   const today = format(now, 'yyyy-MM-dd');
   
-  const openTime = parse(`${today} ${delovniCasOd}`, 'yyyy-MM-dd HH:mm', new Date());
-  const closeTime = parse(`${today} ${delovniCasDo}`, 'yyyy-MM-dd HH:mm', new Date());
+  // Handle both HH:mm and HH:mm:ss formats
+  const formatTime = (timeStr: string) => timeStr.length === 5 ? timeStr : timeStr.substring(0, 5);
+  
+  const openTime = parse(`${today} ${formatTime(delovniCasOd)}`, 'yyyy-MM-dd HH:mm', new Date());
+  const closeTime = parse(`${today} ${formatTime(delovniCasDo)}`, 'yyyy-MM-dd HH:mm', new Date());
   
   return isAfter(now, openTime) && isBefore(now, closeTime);
 };
@@ -28,9 +31,12 @@ export const getAvailablePickupTimes = (
   const now = currentTime || new Date();
   const today = format(now, 'yyyy-MM-dd');
   
+  // Handle both HH:mm and HH:mm:ss formats
+  const formatTime = (timeStr: string) => timeStr.length === 5 ? timeStr : timeStr.substring(0, 5);
+  
   // Restaurant opening and closing times today
-  const openTime = parse(`${today} ${delovniCasOd}`, 'yyyy-MM-dd HH:mm', new Date());
-  const closeTime = parse(`${today} ${delovniCasDo}`, 'yyyy-MM-dd HH:mm', new Date());
+  const openTime = parse(`${today} ${formatTime(delovniCasOd)}`, 'yyyy-MM-dd HH:mm', new Date());
+  const closeTime = parse(`${today} ${formatTime(delovniCasDo)}`, 'yyyy-MM-dd HH:mm', new Date());
   
   // Earliest pickup time is now + 30 minutes
   const earliestPickup = addMinutes(now, 30);
@@ -90,7 +96,11 @@ export const getOrderingStatus = (
 ): 'open' | 'closed' | 'closing_soon' => {
   const now = currentTime || new Date();
   const today = format(now, 'yyyy-MM-dd');
-  const closeTime = parse(`${today} ${delovniCasDo}`, 'yyyy-MM-dd HH:mm', new Date());
+  
+  // Handle both HH:mm and HH:mm:ss formats
+  const formatTime = (timeStr: string) => timeStr.length === 5 ? timeStr : timeStr.substring(0, 5);
+  
+  const closeTime = parse(`${today} ${formatTime(delovniCasDo)}`, 'yyyy-MM-dd HH:mm', new Date());
   const closingSoonTime = addMinutes(closeTime, -60); // 1 hour before closing
   
   const isOpen = isRestaurantOpen(delovniCasOd, delovniCasDo, now);
