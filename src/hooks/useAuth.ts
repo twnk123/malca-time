@@ -228,10 +228,10 @@ export const useAuth = (): UseAuthReturn => {
   const resetPassword = async (email: string) => {
     try {
       setIsLoading(true);
-      // Always use the production app URL to avoid localhost issues
+      // Use the app URL without hash - Supabase will handle the redirect
       const appUrl = 'https://plcyhxyquhdvrozikiss.supabase.co';
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${appUrl}/#reset-password`,
+        redirectTo: appUrl,
       });
 
       if (error) throw error;

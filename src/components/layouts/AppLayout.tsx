@@ -26,7 +26,13 @@ export const AppLayout: React.FC = () => {
   // Check URL hash for reset-password mode
   React.useEffect(() => {
     const hash = window.location.hash;
-    if (hash === '#reset-password' || hash.includes('reset-password')) {
+    const searchParams = new URLSearchParams(window.location.search);
+    
+    // Check for Supabase auth parameters or reset-password hash
+    if (hash === '#reset-password' || 
+        hash.includes('reset-password') || 
+        searchParams.get('type') === 'recovery' ||
+        hash.includes('access_token')) {
       setAuthMode('reset-password');
     }
   }, []);
