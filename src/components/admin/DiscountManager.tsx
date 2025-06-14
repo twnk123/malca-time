@@ -70,10 +70,7 @@ export const DiscountManager: React.FC<DiscountManagerProps> = ({
 
       const { data, error } = await supabase
         .from('popusti')
-        .select(`
-          *,
-          jedi(ime, restavracija_id)
-        `)
+        .select('*')
         .in('jed_id', jedIds);
 
       if (error) throw error;
