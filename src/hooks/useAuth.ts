@@ -48,24 +48,10 @@ export const useAuth = (): UseAuthReturn => {
         return null;
       }
 
-      // If user is admin_restavracije, get restaurant connection
-      let restavracija_id = undefined;
-      if (profil.vloga === 'admin_restavracije') {
-        const { data: adminData } = await supabase
-          .from('admin_restavracije')
-          .select('restavracija_id')
-          .eq('admin_id', userId)
-          .single();
-        
-        if (adminData) {
-          restavracija_id = adminData.restavracija_id;
-        }
-      }
-
-      // If user is admin_restavracije, add restavracija_id
+      // For now, return profile without restaurant connection
       const authUser: AuthUser = {
         ...profil,
-        restavracija_id
+        restavracija_id: undefined
       };
 
       return authUser;
