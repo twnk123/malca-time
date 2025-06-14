@@ -124,7 +124,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 
   return (
     <TooltipProvider>
-      <div className={`relative ${className}`}>
+      <div className={`relative isolate ${className}`} style={{ zIndex: 1 }}>
         <input
           ref={fileInputRef}
           type="file"
@@ -135,7 +135,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
         />
 
         {currentImage ? (
-          <div className="relative group">
+          <div className="relative group overflow-hidden rounded-lg">
             <img
               src={currentImage}
               alt="Naložena slika"
@@ -165,7 +165,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
           </div>
         ) : (
           <div
-            className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center cursor-pointer hover:border-muted-foreground/50 transition-colors"
+            className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center cursor-pointer hover:border-muted-foreground/50 transition-colors overflow-hidden"
             onClick={() => fileInputRef.current?.click()}
           >
             <ImageIcon className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
@@ -180,7 +180,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                     Zahteve
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>
+                <TooltipContent side="top" className="z-50">
                   <div className="text-xs space-y-1">
                     <p>Največja velikost: {maxSize}MB</p>
                     <p>Podprti formati: {acceptedFormats.join(', ')}</p>
@@ -193,7 +193,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
         )}
 
         {uploading && (
-          <div className="absolute inset-0 bg-background/80 rounded-lg flex items-center justify-center">
+          <div className="absolute inset-0 bg-background/80 rounded-lg flex items-center justify-center z-10">
             <div className="text-center space-y-2">
               <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
               <Progress value={uploadProgress} className="w-32" />
@@ -202,6 +202,9 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
           </div>
         )}
       </div>
+      
+      {/* Add spacing below component to prevent overlap */}
+      <div className="h-4" />
     </TooltipProvider>
   );
 };

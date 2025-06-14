@@ -379,21 +379,19 @@ export const AdminMenuPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <Label>Slika jedi</Label>
-                  <div className="mb-8">
-                    <ImageUpload
-                      currentImage={jedForm.slika_url}
-                      onUpload={(url) => setJedForm(prev => ({ ...prev, slika_url: url }))}
-                      bucket="food-images"
-                      maxSize={2}
-                      acceptedFormats={['.jpg', '.jpeg', '.png', '.webp']}
-                      className="w-full h-32"
-                    />
-                  </div>
+                  <ImageUpload
+                    currentImage={jedForm.slika_url}
+                    onUpload={(url) => setJedForm(prev => ({ ...prev, slika_url: url }))}
+                    bucket="food-images"
+                    maxSize={2}
+                    acceptedFormats={['.jpg', '.jpeg', '.png', '.webp']}
+                    className="w-full h-32"
+                  />
                 </div>
 
-                <div className="flex items-center space-x-2 pt-6 mt-6 border-t border-border/30">
+                <div className="flex items-center space-x-2">
                   <Switch
                     id="na_voljo"
                     checked={jedForm.na_voljo}
