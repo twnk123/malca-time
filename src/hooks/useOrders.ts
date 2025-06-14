@@ -103,9 +103,11 @@ export const useOrders = (restaurantId?: string) => {
 
       // Send confirmation emails
       try {
-        await supabase.functions.invoke('send-order-confirmation', {
+        console.log('Sending confirmation email for order:', order.id);
+        const emailResult = await supabase.functions.invoke('send-order-confirmation', {
           body: { orderId: order.id }
         });
+        console.log('Email function result:', emailResult);
       } catch (emailError) {
         console.error('Error sending confirmation emails:', emailError);
         // Don't fail the order creation if email fails
