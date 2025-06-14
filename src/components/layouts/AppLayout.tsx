@@ -23,6 +23,14 @@ export const AppLayout: React.FC = () => {
   const [userView, setUserView] = useState<UserView>('restaurants');
   const [adminView, setAdminView] = useState<AdminView>('menu');
 
+  // Check URL hash for reset-password mode
+  React.useEffect(() => {
+    const hash = window.location.hash;
+    if (hash === '#reset-password' || hash.includes('reset-password')) {
+      setAuthMode('reset-password');
+    }
+  }, []);
+
   // Show loading screen while checking auth
   if (isLoading) {
     return (
