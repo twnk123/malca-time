@@ -228,10 +228,8 @@ export const useAuth = (): UseAuthReturn => {
   const resetPassword = async (email: string) => {
     try {
       setIsLoading(true);
-      // Use the deployed app URL instead of window.location.origin to avoid localhost issues
-      const appUrl = window.location.hostname === 'localhost' 
-        ? 'https://plcyhxyquhdvrozikiss.supabase.co' 
-        : window.location.origin;
+      // Always use the production app URL to avoid localhost issues
+      const appUrl = 'https://plcyhxyquhdvrozikiss.supabase.co';
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${appUrl}/#reset-password`,
       });
