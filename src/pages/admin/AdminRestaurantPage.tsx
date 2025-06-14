@@ -255,6 +255,7 @@ export const AdminRestaurantPage: React.FC = () => {
                   type="time"
                   value={restaurant.delovni_cas_od}
                   onChange={(e) => setRestaurant(prev => prev ? {...prev, delovni_cas_od: e.target.value} : prev)}
+                  step="300"
                 />
               </div>
 
@@ -265,6 +266,7 @@ export const AdminRestaurantPage: React.FC = () => {
                   type="time"
                   value={restaurant.delovni_cas_do}
                   onChange={(e) => setRestaurant(prev => prev ? {...prev, delovni_cas_do: e.target.value} : prev)}
+                  step="300"
                 />
               </div>
             </CardContent>
