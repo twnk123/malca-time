@@ -64,11 +64,21 @@ export const useRestaurantData = (userId?: string) => {
   };
 
   const updateRestaurant = (updates: Partial<RestaurantData>) => {
-    setRestaurant(prev => prev ? { ...prev, ...updates } : prev);
+    console.log('Updating restaurant data:', updates);
+    setRestaurant(prev => {
+      const updated = prev ? { ...prev, ...updates } : prev;
+      console.log('New restaurant state:', updated);
+      return updated;
+    });
   };
 
   const saveRestaurant = async () => {
-    if (!restaurant) return;
+    if (!restaurant) {
+      console.log('No restaurant data to save');
+      return;
+    }
+
+    console.log('Starting save process for restaurant:', restaurant.id);
 
     try {
       setSaving(true);
@@ -111,12 +121,19 @@ export const useRestaurantData = (userId?: string) => {
         logo_url: restaurant.logo_url
       };
 
+      console.log('Sending update to database:', updatedData);
+
       const { error } = await supabase
         .from('restavracije')
         .update(updatedData)
         .eq('id', restaurant.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database update error:', error);
+        throw error;
+      }
+
+      console.log('Database update successful');
 
       // Refetch data to ensure UI reflects database state
       await fetchRestaurantData();
@@ -129,10 +146,11 @@ export const useRestaurantData = (userId?: string) => {
       console.error('Error saving restaurant:', error);
       toast({
         title: "Napaka",
-        description: "Prišlo je do napake pri shranjevanju.",
+        description: `Prišlo je do napake pri shranjevanju: ${error instanceof Error ? error.message : 'Neznana napaka'}`,
         variant: "destructive"
       });
     } finally {
+      console.log('Save process finished');
       setSaving(false);
     }
   };
