@@ -236,6 +236,48 @@ export type Database = {
           },
         ]
       }
+      popusti: {
+        Row: {
+          aktiven: boolean
+          created_at: string
+          id: string
+          jed_id: string
+          naziv: string | null
+          opis: string | null
+          tip_popusta: string
+          updated_at: string
+          veljavnost_do: string | null
+          veljavnost_od: string | null
+          vrednost: number
+        }
+        Insert: {
+          aktiven?: boolean
+          created_at?: string
+          id?: string
+          jed_id: string
+          naziv?: string | null
+          opis?: string | null
+          tip_popusta: string
+          updated_at?: string
+          veljavnost_do?: string | null
+          veljavnost_od?: string | null
+          vrednost: number
+        }
+        Update: {
+          aktiven?: boolean
+          created_at?: string
+          id?: string
+          jed_id?: string
+          naziv?: string | null
+          opis?: string | null
+          tip_popusta?: string
+          updated_at?: string
+          veljavnost_do?: string | null
+          veljavnost_od?: string | null
+          vrednost?: number
+        }
+        Relationships: []
+      }
       postavke_narocila: {
         Row: {
           cena_na_kos: number
@@ -280,6 +322,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      priljubljene_jedi: {
+        Row: {
+          created_at: string
+          id: string
+          jed_id: string
+          uporabnik_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          jed_id: string
+          uporabnik_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          jed_id?: string
+          uporabnik_id?: string
+        }
+        Relationships: []
       }
       profili: {
         Row: {
@@ -326,6 +389,7 @@ export type Database = {
           email: string | null
           id: string
           kontakt: string | null
+          logo_url: string | null
           lokacija: string
           naziv: string
           opis: string | null
@@ -339,6 +403,7 @@ export type Database = {
           email?: string | null
           id?: string
           kontakt?: string | null
+          logo_url?: string | null
           lokacija: string
           naziv: string
           opis?: string | null
@@ -352,6 +417,7 @@ export type Database = {
           email?: string | null
           id?: string
           kontakt?: string | null
+          logo_url?: string | null
           lokacija?: string
           naziv?: string
           opis?: string | null
