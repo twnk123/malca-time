@@ -42,7 +42,10 @@ export const RestaurantOperatingHours: React.FC<RestaurantOperatingHoursProps> =
             step="900"
             value={restaurant.delovni_cas_od?.substring(0, 5) || ''}
             onChange={(e) => onUpdate({ delovni_cas_od: e.target.value })}
-            className="[&::-webkit-datetime-edit-ampm-field]:hidden"
+            style={{ 
+              colorScheme: 'dark light',
+            }}
+            className="[&::-webkit-datetime-edit-ampm-field]:hidden [&::-webkit-datetime-edit-ampm-field]:!hidden [&::-webkit-calendar-picker-indicator]:opacity-50"
           />
         </div>
 
@@ -54,7 +57,10 @@ export const RestaurantOperatingHours: React.FC<RestaurantOperatingHoursProps> =
             step="900"
             value={restaurant.delovni_cas_do?.substring(0, 5) || ''}
             onChange={(e) => onUpdate({ delovni_cas_do: e.target.value })}
-            className="[&::-webkit-datetime-edit-ampm-field]:hidden"
+            style={{ 
+              colorScheme: 'dark light',
+            }}
+            className="[&::-webkit-datetime-edit-ampm-field]:hidden [&::-webkit-datetime-edit-ampm-field]:!hidden [&::-webkit-calendar-picker-indicator]:opacity-50"
           />
         </div>
       </CardContent>
