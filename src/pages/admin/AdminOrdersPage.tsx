@@ -8,7 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
-import { mockNarocila, Narocilo } from '@/data/mockData';
+import { useAuth } from '@/hooks/useAuth';
+import { useOrders } from '@/hooks/useOrders';
+import { OrderStatus } from '@/types/database';
 
 const stanjaMap = {
   'novo': { label: 'Novo', variant: 'default' as const, color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
@@ -19,27 +21,17 @@ const stanjaMap = {
 };
 
 export const AdminOrdersPage: React.FC = () => {
-  const [narocila, setNarocila] = useState<Narocilo[]>(
-    mockNarocila.filter(narocilo => narocilo.restavracija_id === 'rest_1')
-  );
+  const { user } = useAuth();
+  const { orders, isLoading, updateOrderStatus } = useOrders(user?.restavracija_id);
   const [selectedStanje, setSelectedStanje] = useState<string>('vsa');
 
-  const handleUpdateStanje = (narociloId: string, novoStanje: Narocilo['stanje']) => {
-    setNarocila(prev => prev.map(narocilo => 
-      narocilo.id === narociloId 
-        ? { ...narocilo, stanje: novoStanje }
-        : narocilo
-    ));
-    
-    toast({
-      title: "Stanje posodobljeno",
-      description: `Naročilo je označeno kot "${stanjaMap[novoStanje].label}".`,
-    });
+  const handleUpdateStanje = async (narociloId: string, novoStanje: OrderStatus) => {
+    await updateOrderStatus(narociloId, novoStanje);
   };
 
   const filteredNarocila = selectedStanje === 'vsa' 
-    ? narocila 
-    : narocila.filter(narocilo => narocilo.stanje === selectedStanje);
+    ? orders 
+    : orders.filter(narocilo => narocilo.status === selectedStanje);
 
   const formatDatum = (datum: string) => {
     return new Date(datum).toLocaleString('sl-SI', {
@@ -89,7 +81,13 @@ export const AdminOrdersPage: React.FC = () => {
 
           <TabsContent value="aktivna">
             <div className="space-y-4">
-              {narocila.filter(n => n.stanje !== 'prevzeto').length === 0 ? (
+              {isLoading ? (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <p className="text-muted-foreground">Nalagam naročila...</p>
+                  </CardContent>
+                </Card>
+              ) : filteredNarocila.filter(n => n.status !== 'prevzeto').length === 0 ? (
                 <Card>
                   <CardContent className="py-12 text-center">
                     <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
@@ -99,8 +97,8 @@ export const AdminOrdersPage: React.FC = () => {
                   </CardContent>
                 </Card>
               ) : (
-                narocila
-                  .filter(narocilo => narocilo.stanje !== 'prevzeto')
+                filteredNarocila
+                  .filter(narocilo => narocilo.status !== 'prevzeto')
                   .map((narocilo, index) => (
                     <OrderCard 
                       key={narocilo.id} 
@@ -115,7 +113,7 @@ export const AdminOrdersPage: React.FC = () => {
 
           <TabsContent value="prevzeto">
             <div className="space-y-4">
-              {narocila.filter(n => n.stanje === 'prevzeto').length === 0 ? (
+              {filteredNarocila.filter(n => n.status === 'prevzeto').length === 0 ? (
                 <Card>
                   <CardContent className="py-12 text-center">
                     <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
@@ -125,8 +123,8 @@ export const AdminOrdersPage: React.FC = () => {
                   </CardContent>
                 </Card>
               ) : (
-                narocila
-                  .filter(narocilo => narocilo.stanje === 'prevzeto')
+                filteredNarocila
+                  .filter(narocilo => narocilo.status === 'prevzeto')
                   .map((narocilo, index) => (
                     <OrderCard 
                       key={narocilo.id} 
@@ -145,23 +143,37 @@ export const AdminOrdersPage: React.FC = () => {
   );
 };
 
+type OrderWithDetails = {
+  id: string;
+  status: OrderStatus;
+  skupna_cena: number;
+  created_at: string;
+  postavke_narocila: Array<{
+    kolicina: number;
+    cena_na_kos: number;
+    jedi: { ime: string };
+  }>;
+  profili: { ime: string; priimek: string };
+  restavracije: { naziv: string };
+};
+
 interface OrderCardProps {
-  narocilo: Narocilo;
+  narocilo: OrderWithDetails;
   index: number;
-  onUpdateStanje: (id: string, stanje: Narocilo['stanje']) => void;
+  onUpdateStanje: (id: string, stanje: OrderStatus) => void;
   readonly?: boolean;
 }
 
 const OrderCard: React.FC<OrderCardProps> = ({ narocilo, index, onUpdateStanje, readonly = false }) => {
-  const stanjeInfo = stanjaMap[narocilo.stanje];
+  const stanjeInfo = stanjaMap[narocilo.status as keyof typeof stanjaMap];
   
-  const getNextStanje = (trenutnoStanje: Narocilo['stanje']): Narocilo['stanje'] | null => {
-    const zaporedje: Narocilo['stanje'][] = ['novo', 'sprejeto', 'v_pripravi', 'pripravljeno', 'prevzeto'];
+  const getNextStanje = (trenutnoStanje: OrderStatus): OrderStatus | null => {
+    const zaporedje: OrderStatus[] = ['novo', 'sprejeto', 'v_pripravi', 'pripravljeno', 'prevzeto'];
     const trenutniIndex = zaporedje.indexOf(trenutnoStanje);
     return trenutniIndex < zaporedje.length - 1 ? zaporedje[trenutniIndex + 1] : null;
   };
 
-  const nextStanje = getNextStanje(narocilo.stanje);
+  const nextStanje = getNextStanje(narocilo.status);
 
   return (
     <motion.div
@@ -175,18 +187,18 @@ const OrderCard: React.FC<OrderCardProps> = ({ narocilo, index, onUpdateStanje, 
             <CardTitle className="text-lg">
               Naročilo #{narocilo.id.slice(-6)}
             </CardTitle>
-            <Badge className={stanjeInfo.color}>
-              {stanjeInfo.label}
+            <Badge className={stanjeInfo?.color || 'bg-gray-100'}>
+              {stanjeInfo?.label || narocilo.status}
             </Badge>
           </div>
           <div className="flex items-center space-x-4 text-sm text-muted-foreground">
             <div className="flex items-center">
               <User className="h-4 w-4 mr-1" />
-              {narocilo.ime_narocnika}
+              {narocilo.profili.ime} {narocilo.profili.priimek}
             </div>
             <div className="flex items-center">
               <Clock className="h-4 w-4 mr-1" />
-              {new Date(narocilo.datum_narocila).toLocaleString('sl-SI', {
+              {new Date(narocilo.created_at).toLocaleString('sl-SI', {
                 day: '2-digit',
                 month: '2-digit',
                 hour: '2-digit',
@@ -202,10 +214,10 @@ const OrderCard: React.FC<OrderCardProps> = ({ narocilo, index, onUpdateStanje, 
 
         <CardContent>
           <div className="space-y-2 mb-4">
-            {narocilo.jedi.map((jed, index) => (
+            {narocilo.postavke_narocila.map((postavka, index) => (
               <div key={index} className="flex justify-between items-center text-sm">
-                <span>{jed.kolicina}x {jed.naziv}</span>
-                <span className="font-medium">{(jed.cena * jed.kolicina).toFixed(2)}€</span>
+                <span>{postavka.kolicina}x {postavka.jedi.ime}</span>
+                <span className="font-medium">{(postavka.cena_na_kos * postavka.kolicina).toFixed(2)}€</span>
               </div>
             ))}
           </div>
@@ -219,7 +231,7 @@ const OrderCard: React.FC<OrderCardProps> = ({ narocilo, index, onUpdateStanje, 
                 className="w-full"
                 onClick={() => onUpdateStanje(narocilo.id, nextStanje)}
               >
-                Označi kot "{stanjaMap[nextStanje].label}"
+                Označi kot "{stanjaMap[nextStanje as keyof typeof stanjaMap]?.label}"
               </Button>
             </motion.div>
           )}
