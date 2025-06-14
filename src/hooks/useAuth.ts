@@ -43,10 +43,19 @@ export const useAuth = (): UseAuthReturn => {
           *
         `)
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error loading user profile:', error);
+        return null;
+      }
+
+      // If no profile exists, it means user was deleted from profili but still exists in auth
+      // This should not happen in normal flow, but handle it gracefully
+      if (!profil) {
+        console.warn('User authenticated but no profile found. This indicates data inconsistency.');
+        // Sign out the user to force clean state
+        await supabase.auth.signOut({ scope: 'global' });
         return null;
       }
 
