@@ -257,33 +257,38 @@ ${reportData.popularDishes.map((dish, i) =>
                   Trend naročil
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <ChartContainer
-                  config={chartConfig}
-                  className="h-[300px]"
-                >
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={analytics.orderTrends}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis 
-                        dataKey="date" 
-                        stroke="hsl(var(--muted-foreground))"
-                        fontSize={12}
-                        tickFormatter={(value) => new Date(value).toLocaleDateString('sl-SI', { day: '2-digit', month: '2-digit' })}
-                      />
-                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Line 
-                        type="monotone" 
-                        dataKey="orders" 
-                        stroke="var(--color-orders)" 
-                        strokeWidth={2}
-                        dot={{ fill: "var(--color-orders)" }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
-              </CardContent>
+               <CardContent className="p-2 sm:p-6">
+                 <ChartContainer
+                   config={chartConfig}
+                   className="h-[250px] sm:h-[300px] w-full"
+                 >
+                   <ResponsiveContainer width="100%" height="100%">
+                     <LineChart data={analytics.orderTrends} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                       <XAxis 
+                         dataKey="date" 
+                         stroke="hsl(var(--muted-foreground))"
+                         fontSize={10}
+                         interval="preserveStartEnd"
+                         tickFormatter={(value) => new Date(value).toLocaleDateString('sl-SI', { day: '2-digit', month: '2-digit' })}
+                       />
+                       <YAxis 
+                         stroke="hsl(var(--muted-foreground))" 
+                         fontSize={10}
+                         width={30}
+                       />
+                       <ChartTooltip content={<ChartTooltipContent />} />
+                       <Line 
+                         type="monotone" 
+                         dataKey="orders" 
+                         stroke="var(--color-orders)" 
+                         strokeWidth={2}
+                         dot={{ fill: "var(--color-orders)" }}
+                       />
+                     </LineChart>
+                   </ResponsiveContainer>
+                 </ChartContainer>
+               </CardContent>
             </Card>
           </motion.div>
 
@@ -300,31 +305,36 @@ ${reportData.popularDishes.map((dish, i) =>
                   Trend prometa
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <ChartContainer
-                  config={chartConfig}
-                  className="h-[300px]"
-                >
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={analytics.orderTrends}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis 
-                        dataKey="date" 
-                        stroke="hsl(var(--muted-foreground))"
-                        fontSize={12}
-                        tickFormatter={(value) => new Date(value).toLocaleDateString('sl-SI', { day: '2-digit', month: '2-digit' })}
-                      />
-                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar 
-                        dataKey="revenue" 
-                        fill="var(--color-revenue)"
-                        radius={[2, 2, 0, 0]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
-              </CardContent>
+               <CardContent className="p-2 sm:p-6">
+                 <ChartContainer
+                   config={chartConfig}
+                   className="h-[250px] sm:h-[300px] w-full"
+                 >
+                   <ResponsiveContainer width="100%" height="100%">
+                     <BarChart data={analytics.orderTrends} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                       <XAxis 
+                         dataKey="date" 
+                         stroke="hsl(var(--muted-foreground))"
+                         fontSize={10}
+                         interval="preserveStartEnd"
+                         tickFormatter={(value) => new Date(value).toLocaleDateString('sl-SI', { day: '2-digit', month: '2-digit' })}
+                       />
+                       <YAxis 
+                         stroke="hsl(var(--muted-foreground))" 
+                         fontSize={10}
+                         width={30}
+                       />
+                       <ChartTooltip content={<ChartTooltipContent />} />
+                       <Bar 
+                         dataKey="revenue" 
+                         fill="var(--color-revenue)"
+                         radius={[2, 2, 0, 0]}
+                       />
+                     </BarChart>
+                   </ResponsiveContainer>
+                 </ChartContainer>
+               </CardContent>
             </Card>
           </motion.div>
         </div>
@@ -342,27 +352,27 @@ ${reportData.popularDishes.map((dish, i) =>
                 Najpogostejše jedi
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {analytics.popularDishes.slice(0, 5).map((dish, index) => (
-                  <div key={dish.ime} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-foreground text-background rounded-full flex items-center justify-center text-sm font-bold">
-                        {index + 1}
-                      </div>
-                      <div>
-                        <p className="font-medium">{dish.ime}</p>
-                        <p className="text-sm text-muted-foreground">{dish.totalOrders}x naročeno</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold">{dish.totalRevenue.toFixed(2)}€</p>
-                      <p className="text-sm text-muted-foreground">skupni promet</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
+             <CardContent className="p-3 sm:p-6">
+               <div className="space-y-3">
+                 {analytics.popularDishes.slice(0, 5).map((dish, index) => (
+                   <div key={dish.ime} className="flex items-center justify-between p-2 sm:p-3 bg-muted/50 rounded-lg">
+                     <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                       <div className="w-6 h-6 sm:w-8 sm:h-8 bg-foreground text-background rounded-full flex items-center justify-center text-xs sm:text-sm font-bold flex-shrink-0">
+                         {index + 1}
+                       </div>
+                       <div className="min-w-0 flex-1">
+                         <p className="font-medium text-sm sm:text-base truncate">{dish.ime}</p>
+                         <p className="text-xs sm:text-sm text-muted-foreground">{dish.totalOrders}x naročeno</p>
+                       </div>
+                     </div>
+                     <div className="text-right flex-shrink-0 ml-2">
+                       <p className="font-semibold text-sm sm:text-base">{dish.totalRevenue.toFixed(2)}€</p>
+                       <p className="text-xs text-muted-foreground hidden sm:block">skupni promet</p>
+                     </div>
+                   </div>
+                 ))}
+               </div>
+             </CardContent>
           </Card>
         </motion.div>
       </div>

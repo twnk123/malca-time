@@ -14,7 +14,7 @@ interface AnalyticsData {
     monthly: number;
   };
   popularDishes: Array<{
-    ime: string;
+     ime: string;
     totalOrders: number;
     totalRevenue: number;
   }>;
