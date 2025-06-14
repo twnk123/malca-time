@@ -1,208 +1,207 @@
 import React, { useState, useRef } from 'react';
-import { Upload, X, AlertCircle } from 'lucide-react';
+import { Upload, X, ImageIcon, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface ImageUploadProps {
-  bucket: string;
   onUpload: (url: string) => void;
   currentImage?: string;
-  className?: string;
+  bucket: string;
   maxSize?: number; // in MB
   acceptedFormats?: string[];
-  recommendedRatio?: string;
+  className?: string;
 }
 
 export const ImageUpload: React.FC<ImageUploadProps> = ({
-  bucket,
   onUpload,
   currentImage,
-  className = '',
+  bucket,
   maxSize = 1,
   acceptedFormats = ['.jpg', '.jpeg', '.png'],
-  recommendedRatio = '1:1'
+  className = ''
 }) => {
   const [uploading, setUploading] = useState(false);
-  const [dragActive, setDragActive] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const validateFile = (file: File): string | null => {
-    // Check file size
-    if (file.size > maxSize * 1024 * 1024) {
-      return `Datoteka je prevelika. Maksimalna velikost je ${maxSize}MB.`;
-    }
-
-    // Check file type
-    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
-    if (!acceptedFormats.includes(fileExtension)) {
-      return `Nepodprta vrsta datoteke. Podprti formati: ${acceptedFormats.join(', ')}`;
-    }
-
-    return null;
-  };
-
-  const uploadFile = async (file: File) => {
-    const validationError = validateFile(file);
-    if (validationError) {
-      toast({
-        title: "Napaka pri nalaganju",
-        description: validationError,
-        variant: "destructive"
-      });
-      return;
-    }
-
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      // Validate file size
+      if (file.size > maxSize * 1024 * 1024) {
+        toast({
+          title: "Datoteka prevelika",
+          description: `Največja dovoljena velikost je ${maxSize}MB`,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Validate file format
+      const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+      if (!acceptedFormats.includes(fileExtension)) {
+        toast({
+          title: "Nepodprt format",
+          description: `Podprti formati: ${acceptedFormats.join(', ')}`,
+          variant: "destructive"
+        });
+        return;
+      }
+
       setUploading(true);
+      setUploadProgress(0);
 
-      // Generate unique filename
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `${fileName}`;
 
-      const { data, error } = await supabase.storage
+      // Simulate upload progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return prev;
+          }
+          return prev + 10;
+        });
+      }, 100);
+
+      const { error: uploadError } = await supabase.storage
         .from(bucket)
-        .upload(fileName, file);
+        .upload(filePath, file);
 
-      if (error) throw error;
+      clearInterval(progressInterval);
+      setUploadProgress(100);
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data } = supabase.storage
         .from(bucket)
-        .getPublicUrl(fileName);
+        .getPublicUrl(filePath);
 
-      onUpload(publicUrl);
+      onUpload(data.publicUrl);
       
       toast({
         title: "Uspešno naloženo",
         description: "Slika je bila uspešno naložena."
       });
+
     } catch (error) {
-      console.error('Error uploading file:', error);
+      console.error('Error uploading image:', error);
       toast({
-        title: "Napaka pri nalaganju",
+        title: "Napaka",
         description: "Prišlo je do napake pri nalaganju slike.",
         variant: "destructive"
       });
     } finally {
       setUploading(false);
+      setUploadProgress(0);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      uploadFile(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    if (e.target.files && e.target.files[0]) {
-      uploadFile(e.target.files[0]);
-    }
-  };
-
-  const openFileDialog = () => {
-    fileInputRef.current?.click();
-  };
-
-  const removeImage = () => {
+  const handleRemoveImage = () => {
     onUpload('');
+    toast({
+      title: "Slika odstranjena",
+      description: "Slika je bila uspešno odstranjena."
+    });
   };
 
   return (
-    <div className={className}>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept={acceptedFormats.join(',')}
-        onChange={handleChange}
-        className="hidden"
-      />
-      
-      {currentImage ? (
-        <Card className="relative">
-          <CardContent className="p-0">
-            <div className="relative aspect-square">
-              <img
-                src={currentImage}
-                alt="Naložena slika"
-                className="w-full h-full object-cover rounded-lg"
-              />
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={removeImage}
-                className="absolute top-2 right-2"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card
-          className={`border-2 border-dashed transition-colors cursor-pointer ${
-            dragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'
-          } ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
-          onDragEnter={handleDrag}
-          onDragLeave={handleDrag}
-          onDragOver={handleDrag}
-          onDrop={handleDrop}
-          onClick={uploading ? undefined : openFileDialog}
-        >
-          <CardContent className="p-8 text-center">
-            <div className="space-y-4">
-              <Upload className="w-12 h-12 text-muted-foreground mx-auto" />
-              <div>
-                <p className="text-lg font-medium">
-                  {uploading ? 'Nalagam...' : 'Povlecite sliko sem ali kliknite za izbiro'}
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Maksimalna velikost: {maxSize}MB
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Podprti formati: {acceptedFormats.join(', ')}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Priporočeno razmerje: {recommendedRatio}
-                </p>
+    <TooltipProvider>
+      <div className={`relative ${className}`}>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={acceptedFormats.join(',')}
+          onChange={handleFileSelect}
+          className="hidden"
+          disabled={uploading}
+        />
+
+        {currentImage ? (
+          <div className="relative group">
+            <img
+              src={currentImage}
+              alt="Naložena slika"
+              className="w-full h-full object-cover rounded-lg"
+            />
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+              <div className="flex space-x-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  <Upload className="w-4 h-4 mr-1" />
+                  Zamenjaj
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleRemoveImage}
+                  disabled={uploading}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
-      
-      {/* Info tooltip */}
-      <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
-        <div className="flex items-start space-x-2">
-          <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-          <div className="text-xs text-blue-700 dark:text-blue-300">
-            <p><strong>Nasveti za kakovostne slike:</strong></p>
-            <ul className="mt-1 space-y-1">
-              <li>• Uporabite visoko ločljivost</li>
-              <li>• Poskrbite za dobro osvetlitev</li>
-              <li>• Izogibajte se zamegljenim slikam</li>
-              <li>• Priporočeno razmerje: {recommendedRatio}</li>
-            </ul>
           </div>
-        </div>
+        ) : (
+          <div
+            className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center cursor-pointer hover:border-muted-foreground/50 transition-colors"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <ImageIcon className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground mb-2">
+              Kliknite za nalaganje slike
+            </p>
+            <div className="flex items-center justify-center">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">
+                    <Info className="w-3 h-3 mr-1" />
+                    Zahteve
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div className="text-xs space-y-1">
+                    <p>Največja velikost: {maxSize}MB</p>
+                    <p>Podprti formati: {acceptedFormats.join(', ')}</p>
+                    <p>Priporočeno razmerje: 1:1 ali 4:3</p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+        )}
+
+        {uploading && (
+          <div className="absolute inset-0 bg-background/80 rounded-lg flex items-center justify-center">
+            <div className="text-center space-y-2">
+              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+              <Progress value={uploadProgress} className="w-32" />
+              <p className="text-xs text-muted-foreground">Nalaganje...</p>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+    </TooltipProvider>
   );
 };

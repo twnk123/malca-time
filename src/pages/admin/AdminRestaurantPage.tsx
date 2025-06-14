@@ -44,9 +44,13 @@ export const AdminRestaurantPage: React.FC = () => {
         .from('admin_restavracije')
         .select('restavracija_id')
         .eq('admin_id', user?.id)
-        .single();
+        .maybeSingle();
 
       if (adminError) throw adminError;
+      if (!adminData) {
+        console.log('No restaurant assigned to this admin');
+        return;
+      }
 
       const { data: restaurantData, error: restaurantError } = await supabase
         .from('restavracije')

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Plus, Minus, Star, Clock, MapPin } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, Star, Clock, MapPin, Heart } from 'lucide-react';
 import { Header } from '@/components/navigation/Header';
 import { CartSheet } from '@/components/cart/CartSheet';
 import { useCart } from '@/contexts/CartContext';
@@ -10,6 +10,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
+import { useFavorites } from '@/hooks/useFavorites';
+import { useDiscounts } from '@/hooks/useDiscounts';
 import { Database } from '@/integrations/supabase/types';
 
 type Restavracija = Database['public']['Tables']['restavracije']['Row'];
@@ -26,6 +28,8 @@ export const MenuPage: React.FC<MenuPageProps> = ({ restaurant, onBack, onProfil
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const { addToCart } = useCart();
   const { kategorije, jedi, isLoading, error } = useMenu(restaurant.id);
+  const { toggleFavorite, isFavorite } = useFavorites();
+  const { getDiscountForFood, calculateDiscountedPrice } = useDiscounts();
 
   const handleQuantityChange = (jedId: string, change: number) => {
     setQuantities(prev => ({
@@ -150,14 +154,53 @@ export const MenuPage: React.FC<MenuPageProps> = ({ restaurant, onBack, onProfil
                       <Card>
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between">
+                            {jed.slika_url && (
+                              <div className="w-20 h-20 rounded-lg overflow-hidden mr-4 flex-shrink-0">
+                                <img
+                                  src={jed.slika_url}
+                                  alt={jed.ime}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            )}
                             <div className="flex-1 pr-4">
                               <div className="flex items-start justify-between mb-2">
                                 <h3 className="font-semibold text-foreground">
                                   {jed.ime}
                                 </h3>
-                                <span className="font-bold text-lg text-foreground">
-                                  {Number(jed.cena).toFixed(2)}€
-                                </span>
+                                <div className="flex items-center space-x-2">
+                                  {(() => {
+                                    const discount = getDiscountForFood(jed.id);
+                                    const originalPrice = Number(jed.cena);
+                                    const discountedPrice = discount ? calculateDiscountedPrice(originalPrice, discount) : originalPrice;
+                                    
+                                    return (
+                                      <div className="text-right">
+                                        {discount && (
+                                          <div className="text-xs text-destructive line-through">
+                                            {originalPrice.toFixed(2)}€
+                                          </div>
+                                        )}
+                                        <span className="font-bold text-lg text-foreground">
+                                          {discountedPrice.toFixed(2)}€
+                                        </span>
+                                        {discount && (
+                                          <Badge variant="destructive" className="ml-1 text-xs">
+                                            -{discount.tip_popusta === 'procent' ? `${discount.vrednost}%` : `${discount.vrednost}€`}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    );
+                                  })()}
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => toggleFavorite(jed.id)}
+                                  >
+                                    <Heart className={`h-4 w-4 ${isFavorite(jed.id) ? 'fill-destructive text-destructive' : 'text-muted-foreground'}`} />
+                                  </Button>
+                                </div>
                               </div>
                               
                               <p className="text-muted-foreground text-sm mb-4">
