@@ -9,8 +9,8 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { useOrders } from '@/hooks/useOrders';
 
 interface CartSheetProps {
   open: boolean;
@@ -22,6 +22,7 @@ export const CartSheet: React.FC<CartSheetProps> = ({ open, onOpenChange }) => {
   const [komentar, setKomentar] = useState('');
   const [loading, setLoading] = useState(false);
   const { user } = useAuthContext();
+  const { createOrder } = useOrders();
 
   const handleOrderSubmit = async () => {
     if (items.length === 0) {
@@ -45,52 +46,49 @@ export const CartSheet: React.FC<CartSheetProps> = ({ open, onOpenChange }) => {
     setLoading(true);
 
     try {
-      // Get restaurant ID from first item
-      const restevracjaId = items[0].restavracija_id;
+      console.log('CartSheet: Starting order submission...');
       
-      // Create order using profile ID (not auth user ID)
-      const { data: narocilo, error: narocilError } = await supabase
-        .from('narocila')
-        .insert({
-          uporabnik_id: user.id, // Use profile ID which is what the foreign key references
-          restavracija_id: restevracjaId,
-          skupna_cena: getTotalPrice(),
-          opomba: komentar.trim() || null,
-          cas_prevzema: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutes from now
-          status: 'novo'
-        })
-        .select()
-        .single();
-
-      if (narocilError) throw narocilError;
-
-      // Create order items
-      const postavkeNarocila = items.map(item => ({
-        narocilo_id: narocilo.id,
-        jed_id: item.id,
+      // Get restaurant ID from first item
+      const restavracijaId = items[0].restavracija_id;
+      
+      // Convert cart items to the format expected by orderService
+      const cartItems = items.map(item => ({
+        jed: {
+          id: item.id,
+          ime: item.naziv,
+          cena: item.cena,
+          restavracija_id: item.restavracija_id,
+          kategorija_id: '', // Not needed for order creation
+          opis: item.opis || '',
+          na_voljo: true,
+          slika_url: '',
+          vrstni_red: 0,
+          created_at: '',
+          updated_at: ''
+        },
         kolicina: item.kolicina,
-        cena_na_kos: item.cena,
         opomba: null
       }));
 
-      const { error: postavkeError } = await supabase
-        .from('postavke_narocila')
-        .insert(postavkeNarocila);
+      console.log('CartSheet: Calling createOrder with:', { restavracijaId, cartItems });
+      
+      // Use the orderService to create order and send emails
+      await createOrder(
+        user.id,
+        restavracijaId,
+        new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutes from now
+        cartItems,
+        komentar.trim() || undefined
+      );
 
-      if (postavkeError) throw postavkeError;
-
-      const opisNarocila = komentar.trim() ? ` (${komentar.trim()})` : '';
-      toast({
-        title: "Naročilo oddano!",
-        description: `Vaše naročilo v vrednosti ${getTotalPrice().toFixed(2)}€ je bilo uspešno oddano.${opisNarocila}`,
-      });
+      console.log('CartSheet: Order created successfully');
       
       clearCart();
       setKomentar('');
       onOpenChange(false);
 
     } catch (error) {
-      console.error('Error creating order:', error);
+      console.error('CartSheet: Error creating order:', error);
       toast({
         title: "Napaka pri oddaji naročila",
         description: "Prišlo je do napake. Poskusite znova.",
