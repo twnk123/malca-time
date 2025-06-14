@@ -1,12 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { UserRole, Profil } from '@/types/database';
 
-export type UserRole = 'uporabnik' | 'admin_restavracije';
-
-export interface User {
-  id: string;
-  email: string;
-  ime: string;
-  vloga: UserRole;
+export interface User extends Profil {
   restavracija_id?: string; // Za admin_restavracije
 }
 
@@ -45,17 +40,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (email === 'admin@restavracija.si') {
       setUser({
         id: '1',
+        user_id: '1',
         email: email,
-        ime: 'Admin Restavracije',
+        ime: 'Admin',
+        priimek: 'Restavracije',
+        telefon: null,
         vloga: 'admin_restavracije',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
         restavracija_id: 'rest_1'
       });
     } else {
       setUser({
         id: '2',
+        user_id: '2',
         email: email,
-        ime: 'Test Uporabnik',
-        vloga: 'uporabnik'
+        ime: 'Test',
+        priimek: 'Uporabnik',
+        telefon: null,
+        vloga: 'uporabnik',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       });
     }
     
@@ -70,9 +75,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     setUser({
       id: Date.now().toString(),
+      user_id: Date.now().toString(),
       email: email,
       ime: ime,
-      vloga: 'uporabnik'
+      priimek: '',
+      telefon: null,
+      vloga: 'uporabnik',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     });
     
     setIsLoading(false);
