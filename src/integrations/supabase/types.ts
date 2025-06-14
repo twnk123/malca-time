@@ -180,7 +180,7 @@ export type Database = {
             columns: ["uporabnik_id"]
             isOneToOne: false
             referencedRelation: "profili"
-            referencedColumns: ["id"]
+            referencedColumns: ["user_id"]
           },
         ]
       }
