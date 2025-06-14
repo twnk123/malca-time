@@ -15,13 +15,18 @@ interface OrderEmailRequest {
 }
 
 const handler = async (req: Request): Promise<Response> => {
+  console.log('Send-order-confirmation function called');
+  
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { orderId }: OrderEmailRequest = await req.json();
+    const body = await req.text();
+    console.log('Request body:', body);
+    const { orderId }: OrderEmailRequest = JSON.parse(body);
+    console.log('Processing order ID:', orderId);
 
     // Initialize Supabase client
     const supabase = createClient(
@@ -45,8 +50,11 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (error || !order) {
-      throw new Error('Order not found');
+      console.error('Order not found:', error);
+      throw new Error(`Order not found: ${error?.message || 'Unknown error'}`);
     }
+    
+    console.log('Order found:', order.id, 'User:', order.profili.email);
 
     const orderDate = new Date(order.created_at).toLocaleString('sl-SI', {
       day: '2-digit',
@@ -153,22 +161,26 @@ const handler = async (req: Request): Promise<Response> => {
     `;
 
     // Send email to user
+    console.log('Sending email to user:', order.profili.email);
     const userEmailResponse = await resend.emails.send({
       from: "Naročila <onboarding@resend.dev>",
       to: [order.profili.email],
       subject: `Potrditev naročila #${order.id.slice(-6)}`,
       html: userEmailHtml,
     });
+    console.log('User email sent:', userEmailResponse);
 
     // Send email to restaurant (if restaurant has email)
     let restaurantEmailResponse = null;
     if (order.restavracije.email) {
+      console.log('Sending email to restaurant:', order.restavracije.email);
       restaurantEmailResponse = await resend.emails.send({
         from: "Naročila <onboarding@resend.dev>",
         to: [order.restavracije.email],
         subject: `Novo naročilo #${order.id.slice(-6)} - ${order.restavracije.naziv}`,
         html: restaurantEmailHtml,
       });
+      console.log('Restaurant email sent:', restaurantEmailResponse);
     }
 
     console.log("Emails sent successfully:", { userEmailResponse, restaurantEmailResponse });
@@ -188,9 +200,16 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
   } catch (error: any) {
-    console.error("Error in send-order-confirmation function:", error);
+    console.error("Detailed error in send-order-confirmation function:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: error.stack 
+      }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
