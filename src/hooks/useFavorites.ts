@@ -22,7 +22,7 @@ export const useFavorites = () => {
       const { data, error } = await supabase
         .from('priljubljene_jedi')
         .select('jed_id')
-        .eq('uporabnik_id', user.id);
+        .eq('uporabnik_id', user.user_id);
 
       if (error) throw error;
 
@@ -52,7 +52,7 @@ export const useFavorites = () => {
         const { error } = await supabase
           .from('priljubljene_jedi')
           .delete()
-          .eq('uporabnik_id', user.id)
+          .eq('uporabnik_id', user.user_id)
           .eq('jed_id', jedId);
 
         if (error) throw error;
@@ -67,7 +67,7 @@ export const useFavorites = () => {
         const { error } = await supabase
           .from('priljubljene_jedi')
           .insert({
-            uporabnik_id: user.id,
+            uporabnik_id: user.user_id,
             jed_id: jedId
           });
 
