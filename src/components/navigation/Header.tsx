@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowDown, ShoppingCart } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { useCartContext } from '@/contexts/CartContext';
+import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
@@ -14,7 +14,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ title, showCart = false, onCartClick }) => {
   const { user, signOut } = useAuthContext();
-  const { getTotalItems } = useCartContext();
+  const { getTotalItems } = useCart();
 
   return (
     <motion.header 

@@ -4,12 +4,16 @@ import { ArrowLeft, Plus, Minus, Star, Clock, MapPin } from 'lucide-react';
 import { Header } from '@/components/navigation/Header';
 import { CartSheet } from '@/components/cart/CartSheet';
 import { useCart } from '@/contexts/CartContext';
+import { useMenu } from '@/hooks/useMenu';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
-import { mockJedi, Restavracija, Jed } from '@/data/mockData';
+import { Database } from '@/integrations/supabase/types';
+
+type Restavracija = Database['public']['Tables']['restavracije']['Row'];
+type Jed = Database['public']['Tables']['jedi']['Row'];
 
 interface MenuPageProps {
   restaurant: Restavracija;
@@ -20,16 +24,7 @@ export const MenuPage: React.FC<MenuPageProps> = ({ restaurant, onBack }) => {
   const [cartOpen, setCartOpen] = useState(false);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const { addToCart } = useCart();
-
-  const jediRestavracije = useMemo(() => 
-    mockJedi.filter(jed => jed.restavracija_id === restaurant.id),
-    [restaurant.id]
-  );
-
-  const kategorije = useMemo(() => 
-    [...new Set(jediRestavracije.map(jed => jed.kategorija))],
-    [jediRestavracije]
-  );
+  const { kategorije, jedi, isLoading, error } = useMenu(restaurant.id);
 
   const handleQuantityChange = (jedId: string, change: number) => {
     setQuantities(prev => ({
@@ -44,9 +39,9 @@ export const MenuPage: React.FC<MenuPageProps> = ({ restaurant, onBack }) => {
     for (let i = 0; i < kolicina; i++) {
       addToCart({
         id: jed.id,
-        naziv: jed.naziv,
-        cena: jed.cena,
-        opis: jed.opis,
+        naziv: jed.ime,
+        cena: Number(jed.cena),
+        opis: jed.opis || '',
         restavracija_id: restaurant.id,
         restavracija_naziv: restaurant.naziv
       });
@@ -56,7 +51,7 @@ export const MenuPage: React.FC<MenuPageProps> = ({ restaurant, onBack }) => {
     
     toast({
       title: "Dodano v košarico",
-      description: `${jed.naziv} (${kolicina}x) - ${(jed.cena * kolicina).toFixed(2)}€`,
+      description: `${jed.ime} (${kolicina}x) - ${(Number(jed.cena) * kolicina).toFixed(2)}€`,
     });
   };
 
@@ -70,12 +65,10 @@ export const MenuPage: React.FC<MenuPageProps> = ({ restaurant, onBack }) => {
 
       {/* Restaurant Header */}
       <div className="relative">
-        <div className="aspect-[3/2] relative overflow-hidden">
-          <img
-            src={restaurant.slika}
-            alt={restaurant.naziv}
-            className="w-full h-full object-cover"
-          />
+        <div className="aspect-[3/2] relative overflow-hidden bg-gradient-to-br from-primary to-primary/80">
+          <div className="w-full h-full flex items-center justify-center">
+            <span className="text-6xl font-bold text-primary-foreground/30">{restaurant.naziv.charAt(0)}</span>
+          </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
           
           <Button
@@ -94,11 +87,11 @@ export const MenuPage: React.FC<MenuPageProps> = ({ restaurant, onBack }) => {
             <div className="flex items-center space-x-4 text-xs">
               <div className="flex items-center">
                 <Star className="h-3 w-3 mr-1 fill-current" />
-                {restaurant.ocena}
+                4.5
               </div>
               <div className="flex items-center">
                 <Clock className="h-3 w-3 mr-1" />
-                {restaurant.cas_dostave}
+                {restaurant.delovni_cas_od} - {restaurant.delovni_cas_do}
               </div>
               <div className="flex items-center">
                 <MapPin className="h-3 w-3 mr-1" />
@@ -111,25 +104,42 @@ export const MenuPage: React.FC<MenuPageProps> = ({ restaurant, onBack }) => {
 
       {/* Menu */}
       <div className="container mx-auto px-4 py-6">
-        <Tabs defaultValue={kategorije[0]} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            {kategorije.map(kategorija => (
-              <TabsTrigger key={kategorija} value={kategorija} className="text-sm">
-                {kategorija}
-              </TabsTrigger>
+        {isLoading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <Card key={i}>
+                <CardContent className="p-4">
+                  <div className="h-4 bg-muted rounded animate-pulse mb-2" />
+                  <div className="h-3 bg-muted rounded animate-pulse mb-4 w-3/4" />
+                  <div className="h-8 bg-muted rounded animate-pulse w-24" />
+                </CardContent>
+              </Card>
             ))}
-          </TabsList>
+          </div>
+        ) : error ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">Napaka pri nalaganju menija: {error}</p>
+          </div>
+        ) : kategorije.length > 0 ? (
+          <Tabs defaultValue={kategorije[0]?.naziv} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              {kategorije.map(kategorija => (
+                <TabsTrigger key={kategorija.id} value={kategorija.naziv} className="text-sm">
+                  {kategorija.naziv}
+                </TabsTrigger>
+              ))}
+            </TabsList>
 
-          {kategorije.map(kategorija => (
-            <TabsContent key={kategorija} value={kategorija}>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="space-y-4"
-              >
-                {jediRestavracije
-                  .filter(jed => jed.kategorija === kategorija)
-                  .map((jed, index) => (
+            {kategorije.map(kategorija => (
+              <TabsContent key={kategorija.id} value={kategorija.naziv}>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="space-y-4"
+                >
+                  {jedi
+                    .filter(jed => jed.kategorija_id === kategorija.id)
+                    .map((jed, index) => (
                     <motion.div
                       key={jed.id}
                       initial={{ opacity: 0, y: 20 }}
@@ -142,10 +152,10 @@ export const MenuPage: React.FC<MenuPageProps> = ({ restaurant, onBack }) => {
                             <div className="flex-1 pr-4">
                               <div className="flex items-start justify-between mb-2">
                                 <h3 className="font-semibold text-foreground">
-                                  {jed.naziv}
+                                  {jed.ime}
                                 </h3>
                                 <span className="font-bold text-lg text-foreground">
-                                  {jed.cena.toFixed(2)}€
+                                  {Number(jed.cena).toFixed(2)}€
                                 </span>
                               </div>
                               
@@ -199,11 +209,16 @@ export const MenuPage: React.FC<MenuPageProps> = ({ restaurant, onBack }) => {
                     </motion.div>
                   ))
                 }
-              </motion.div>
-            </TabsContent>
-          ))}
-        </Tabs>
-      </div>
+                  </motion.div>
+                </TabsContent>
+              ))}
+            </Tabs>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">Ta restavracija nima dodanih jedi.</p>
+            </div>
+          )}
+        </div>
 
       <CartSheet open={cartOpen} onOpenChange={setCartOpen} />
     </div>

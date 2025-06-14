@@ -6,7 +6,9 @@ import { RestaurantsPage } from '@/pages/user/RestaurantsPage';
 import { MenuPage } from '@/pages/user/MenuPage';
 import { AdminMenuPage } from '@/pages/admin/AdminMenuPage';
 import { AdminOrdersPage } from '@/pages/admin/AdminOrdersPage';
-import { Restavracija } from '@/types/database';
+import { Database } from '@/integrations/supabase/types';
+
+type Restavracija = Database['public']['Tables']['restavracije']['Row'];
 
 type AuthMode = 'login' | 'register';
 type UserView = 'restaurants' | 'menu';

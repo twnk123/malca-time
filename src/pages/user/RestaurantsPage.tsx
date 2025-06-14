@@ -6,7 +6,10 @@ import { CartSheet } from '@/components/cart/CartSheet';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { mockRestavracije, Restavracija } from '@/data/mockData';
+import { useRestaurants } from '@/hooks/useRestaurants';
+import { Database } from '@/integrations/supabase/types';
+
+type Restavracija = Database['public']['Tables']['restavracije']['Row'];
 
 interface RestaurantsPageProps {
   onSelectRestaurant: (restaurant: Restavracija) => void;
@@ -14,15 +17,10 @@ interface RestaurantsPageProps {
 
 export const RestaurantsPage: React.FC<RestaurantsPageProps> = ({ onSelectRestaurant }) => {
   const [cartOpen, setCartOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const { restaurants, isLoading, error } = useRestaurants();
 
   const handleSelectRestaurant = (restaurant: Restavracija) => {
-    setIsLoading(true);
-    // Simulacija nalaganja
-    setTimeout(() => {
-      onSelectRestaurant(restaurant);
-      setIsLoading(false);
-    }, 500);
+    onSelectRestaurant(restaurant);
   };
 
   return (
@@ -47,8 +45,26 @@ export const RestaurantsPage: React.FC<RestaurantsPageProps> = ({ onSelectRestau
           </p>
         </motion.div>
 
-        <div className="grid gap-4">
-          {mockRestavracije.map((restavracija, index) => (
+        {isLoading ? (
+          <div className="grid gap-4">
+            {[1, 2, 3].map((i) => (
+              <Card key={i} className="overflow-hidden">
+                <div className="aspect-[4/3] bg-muted animate-pulse" />
+                <CardContent className="p-4">
+                  <div className="h-4 bg-muted rounded animate-pulse mb-2" />
+                  <div className="h-3 bg-muted rounded animate-pulse mb-3 w-3/4" />
+                  <div className="h-3 bg-muted rounded animate-pulse w-1/2" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : error ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">Napaka pri nalaganju restavracij: {error}</p>
+          </div>
+        ) : (
+          <div className="grid gap-4">
+            {restaurants.map((restavracija, index) => (
             <motion.div
               key={restavracija.id}
               initial={{ opacity: 0, y: 20 }}
@@ -59,16 +75,14 @@ export const RestaurantsPage: React.FC<RestaurantsPageProps> = ({ onSelectRestau
                 className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer"
                 onClick={() => handleSelectRestaurant(restavracija)}
               >
-                <div className="aspect-[4/3] relative overflow-hidden">
-                  <img
-                    src={restavracija.slika}
-                    alt={restavracija.naziv}
-                    className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                  />
+                <div className="aspect-[4/3] relative overflow-hidden bg-muted">
+                  <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                    <span className="text-4xl font-bold text-primary/30">{restavracija.naziv.charAt(0)}</span>
+                  </div>
                   <div className="absolute top-3 left-3">
                     <Badge variant="secondary" className="bg-background/90 text-foreground">
                       <Star className="h-3 w-3 mr-1 fill-current" />
-                      {restavracija.ocena}
+                      4.5
                     </Badge>
                   </div>
                 </div>
@@ -90,7 +104,7 @@ export const RestaurantsPage: React.FC<RestaurantsPageProps> = ({ onSelectRestau
                         </div>
                         <div className="flex items-center">
                           <Clock className="h-3 w-3 mr-1" />
-                          {restavracija.cas_dostave}
+                          {restavracija.delovni_cas_od} - {restavracija.delovni_cas_do}
                         </div>
                       </div>
                     </div>
@@ -107,10 +121,11 @@ export const RestaurantsPage: React.FC<RestaurantsPageProps> = ({ onSelectRestau
                 </CardContent>
               </Card>
             </motion.div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
-        {isLoading && (
+        {false && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
