@@ -148,6 +148,31 @@ export const useOrders = (restaurantId?: string) => {
 
   useEffect(() => {
     fetchOrders();
+
+    // Set up real-time subscription for orders
+    if (restaurantId) {
+      const channel = supabase
+        .channel('schema-db-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'narocila',
+            filter: `restavracija_id=eq.${restaurantId}`
+          },
+          (payload) => {
+            console.log('Real-time order update:', payload);
+            // Refetch orders when any change occurs
+            fetchOrders();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, [restaurantId]);
 
   return {
