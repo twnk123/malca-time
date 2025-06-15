@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, Mail, Lock, User, Phone, ArrowLeft } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { sanitizeInput, validateInput } from '@/utils/security';
+import { PasswordStrength } from '@/components/ui/password-strength';
 
 interface RegisterPageProps {
   onSwitchToLogin: () => void;
@@ -26,24 +28,36 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) =
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
 
-    if (!formData.ime.trim()) {
+    // Sanitize and validate names
+    const sanitizedIme = sanitizeInput.name(formData.ime);
+    const sanitizedPriimek = sanitizeInput.name(formData.priimek);
+    
+    if (!sanitizedIme.trim()) {
       newErrors.ime = 'Ime je obvezno';
+    } else if (!validateInput.name(sanitizedIme)) {
+      newErrors.ime = 'Ime lahko vsebuje samo črke, presledke in pomišljaje';
     }
 
-    if (!formData.priimek.trim()) {
+    if (!sanitizedPriimek.trim()) {
       newErrors.priimek = 'Priimek je obvezen';
+    } else if (!validateInput.name(sanitizedPriimek)) {
+      newErrors.priimek = 'Priimek lahko vsebuje samo črke, presledke in pomišljaje';
     }
 
-    if (!formData.email) {
+    // Sanitize and validate email
+    const sanitizedEmail = sanitizeInput.email(formData.email);
+    if (!sanitizedEmail) {
       newErrors.email = 'Email je obvezen';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    } else if (!validateInput.email(sanitizedEmail)) {
       newErrors.email = 'Email ni veljaven';
     }
 
+    // Validate password strength
+    const passwordValidation = validateInput.password(formData.password);
     if (!formData.password) {
       newErrors.password = 'Geslo je obvezno';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Geslo mora imeti vsaj 6 znakov';
+    } else if (!passwordValidation.isValid) {
+      newErrors.password = passwordValidation.errors[0];
     }
 
     if (!formData.confirmPassword) {
@@ -52,8 +66,12 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) =
       newErrors.confirmPassword = 'Gesli se ne ujemata';
     }
 
-    if (formData.telefon && !/^[\d\s\+\-\(\)]+$/.test(formData.telefon)) {
-      newErrors.telefon = 'Telefonska številka ni veljavna';
+    // Validate phone if provided
+    if (formData.telefon) {
+      const sanitizedTelefon = sanitizeInput.phone(formData.telefon);
+      if (!validateInput.phone(sanitizedTelefon)) {
+        newErrors.telefon = 'Telefonska številka ni veljavna';
+      }
     }
 
     setErrors(newErrors);
@@ -66,12 +84,17 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) =
     if (!validateForm()) return;
 
     try {
+      const sanitizedEmail = sanitizeInput.email(formData.email);
+      const sanitizedIme = sanitizeInput.name(formData.ime);
+      const sanitizedPriimek = sanitizeInput.name(formData.priimek);
+      const sanitizedTelefon = formData.telefon ? sanitizeInput.phone(formData.telefon) : undefined;
+
       await signUp(
-        formData.email,
+        sanitizedEmail,
         formData.password,
-        formData.ime,
-        formData.priimek,
-        formData.telefon || undefined
+        sanitizedIme,
+        sanitizedPriimek,
+        sanitizedTelefon
       );
     } catch (error) {
       // Error handling is done in the hook
@@ -127,7 +150,10 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) =
                       placeholder="Ime"
                       className="pl-10"
                       value={formData.ime}
-                      onChange={(e) => setFormData(prev => ({ ...prev, ime: e.target.value }))}
+                      onChange={(e) => {
+                        const sanitized = sanitizeInput.name(e.target.value);
+                        setFormData(prev => ({ ...prev, ime: sanitized }));
+                      }}
                       disabled={isLoading}
                     />
                   </div>
@@ -141,7 +167,10 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) =
                     type="text"
                     placeholder="Priimek"
                     value={formData.priimek}
-                    onChange={(e) => setFormData(prev => ({ ...prev, priimek: e.target.value }))}
+                    onChange={(e) => {
+                      const sanitized = sanitizeInput.name(e.target.value);
+                      setFormData(prev => ({ ...prev, priimek: sanitized }));
+                    }}
                     disabled={isLoading}
                   />
                   {errors.priimek && <p className="text-xs text-destructive">{errors.priimek}</p>}
@@ -158,7 +187,10 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) =
                     placeholder="vase.ime@email.com"
                     className="pl-10"
                     value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    onChange={(e) => {
+                      const sanitized = sanitizeInput.email(e.target.value);
+                      setFormData(prev => ({ ...prev, email: sanitized }));
+                    }}
                     disabled={isLoading}
                   />
                 </div>
@@ -175,7 +207,10 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) =
                     placeholder="+386 XX XXX XXX"
                     className="pl-10"
                     value={formData.telefon}
-                    onChange={(e) => setFormData(prev => ({ ...prev, telefon: e.target.value }))}
+                    onChange={(e) => {
+                      const sanitized = sanitizeInput.phone(e.target.value);
+                      setFormData(prev => ({ ...prev, telefon: sanitized }));
+                    }}
                     disabled={isLoading}
                   />
                 </div>
@@ -197,6 +232,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) =
                   />
                 </div>
                 {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
+                <PasswordStrength password={formData.password} />
               </div>
 
               <div className="space-y-2">

@@ -3,6 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { Profil, UserRole } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
+import { validateInput, sanitizeInput, rateLimiting, securityLogging } from '@/utils/security';
 
 export interface AuthUser extends Profil {
   restavracija_id?: string;
@@ -138,15 +139,42 @@ export const useAuth = (): UseAuthReturn => {
       setIsLoading(true);
       cleanupAuthState();
 
+      // Sanitize inputs
+      const sanitizedEmail = sanitizeInput.email(email);
+      const sanitizedIme = sanitizeInput.name(ime);
+      const sanitizedPriimek = sanitizeInput.name(priimek);
+      const sanitizedTelefon = telefon ? sanitizeInput.phone(telefon) : undefined;
+
+      // Validate inputs
+      if (!validateInput.email(sanitizedEmail)) {
+        throw new Error('Email naslov ni veljaven');
+      }
+      
+      if (!validateInput.name(sanitizedIme) || !validateInput.name(sanitizedPriimek)) {
+        throw new Error('Ime in priimek lahko vsebujeta samo črke, presledke in pomišljaje');
+      }
+
+      if (sanitizedTelefon && !validateInput.phone(sanitizedTelefon)) {
+        throw new Error('Telefonska številka ni veljavna');
+      }
+
+      const passwordValidation = validateInput.password(password);
+      if (!passwordValidation.isValid) {
+        throw new Error(passwordValidation.errors[0]);
+      }
+
+      // Log security event
+      securityLogging.logEvent('signup_attempt', { email: sanitizedEmail });
+
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: sanitizedEmail,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
-            ime,
-            priimek,
-            telefon: telefon || null
+            ime: sanitizedIme,
+            priimek: sanitizedPriimek,
+            telefon: sanitizedTelefon || null
           }
         }
       });
@@ -154,6 +182,7 @@ export const useAuth = (): UseAuthReturn => {
       if (error) throw error;
 
       if (data.user) {
+        securityLogging.logEvent('signup_success', { email: sanitizedEmail, user_id: data.user.id });
         toast({
           title: "Registracija uspešna!",
           description: "Dobrodošli v MalcaTime aplikaciji.",
@@ -162,6 +191,7 @@ export const useAuth = (): UseAuthReturn => {
       }
     } catch (error: any) {
       console.error('Sign up error:', error);
+      securityLogging.logEvent('signup_failed', { email: sanitizeInput.email(email), error: error.message });
       toast({
         title: "Napaka pri registraciji",
         description: error.message || "Prišlo je do napake pri registraciji.",
@@ -178,6 +208,23 @@ export const useAuth = (): UseAuthReturn => {
       setIsLoading(true);
       cleanupAuthState();
 
+      // Sanitize email
+      const sanitizedEmail = sanitizeInput.email(email);
+
+      // Check rate limiting
+      if (!rateLimiting.canAttemptLogin(sanitizedEmail)) {
+        const timeRemaining = Math.ceil(rateLimiting.getTimeUntilNextAttempt(sanitizedEmail) / 1000 / 60);
+        throw new Error(`Preveč neuspešnih poskusov. Poskusite znova čez ${timeRemaining} minut.`);
+      }
+
+      // Validate email format
+      if (!validateInput.email(sanitizedEmail)) {
+        throw new Error('Email naslov ni veljaven');
+      }
+
+      // Log security event
+      securityLogging.logEvent('signin_attempt', { email: sanitizedEmail });
+
       // Attempt global sign out first
       try {
         await supabase.auth.signOut({ scope: 'global' });
@@ -186,13 +233,41 @@ export const useAuth = (): UseAuthReturn => {
       }
 
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: sanitizedEmail,
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        // Record failed attempt and log security event
+        rateLimiting.recordFailedAttempt(sanitizedEmail);
+        securityLogging.logEvent('signin_failed', { 
+          email: sanitizedEmail, 
+          error: error.message,
+          attempts: rateLimiting.getTimeUntilNextAttempt(sanitizedEmail) > 0 ? 5 : undefined
+        });
+        
+        // Call backend to record failed attempt
+        try {
+          await supabase.rpc('record_failed_login_attempt', {
+            p_email: sanitizedEmail,
+            p_ip_address: null, // Will be filled by backend
+            p_user_agent: navigator.userAgent
+          });
+        } catch (rpcError) {
+          console.error('Failed to log failed attempt to backend:', rpcError);
+        }
+        
+        throw error;
+      }
 
       if (data.user) {
+        // Clear failed attempts on successful login
+        rateLimiting.clearFailedAttempts(sanitizedEmail);
+        securityLogging.logEvent('signin_success', { 
+          email: sanitizedEmail, 
+          user_id: data.user.id 
+        });
+        
         toast({
           title: "Prijava uspešna!",
           description: "Dobrodošli nazaj!",

@@ -4,8 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Mail, Lock } from 'lucide-react';
+import { Loader2, Mail, Lock, Shield } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { sanitizeInput, validateInput, rateLimiting } from '@/utils/security';
 
 interface LoginPageProps {
   onSwitchToRegister: () => void;
@@ -19,18 +20,33 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onSwit
     password: ''
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [isRateLimited, setIsRateLimited] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(0);
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
 
-    if (!formData.email) {
+    // Sanitize and validate email
+    const sanitizedEmail = sanitizeInput.email(formData.email);
+    if (!sanitizedEmail) {
       newErrors.email = 'Email je obvezen';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    } else if (!validateInput.email(sanitizedEmail)) {
       newErrors.email = 'Email ni veljaven';
     }
 
     if (!formData.password) {
       newErrors.password = 'Geslo je obvezno';
+    }
+
+    // Check rate limiting
+    if (sanitizedEmail && !rateLimiting.canAttemptLogin(sanitizedEmail)) {
+      const remaining = Math.ceil(rateLimiting.getTimeUntilNextAttempt(sanitizedEmail) / 1000 / 60);
+      newErrors.general = `Preveč neuspešnih poskusov. Poskusite znova čez ${remaining} minut.`;
+      setIsRateLimited(true);
+      setTimeRemaining(remaining);
+    } else {
+      setIsRateLimited(false);
+      setTimeRemaining(0);
     }
 
     setErrors(newErrors);
@@ -43,9 +59,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onSwit
     if (!validateForm()) return;
 
     try {
-      await signIn(formData.email, formData.password);
+      const sanitizedEmail = sanitizeInput.email(formData.email);
+      await signIn(sanitizedEmail, formData.password);
     } catch (error) {
-      // Error handling is done in the hook
+      // Re-validate form to update rate limiting status
+      setTimeout(() => validateForm(), 100);
     }
   };
 
@@ -94,7 +112,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onSwit
                     placeholder="vase.ime@email.com"
                     className="pl-10"
                     value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    onChange={(e) => {
+                      const sanitized = sanitizeInput.email(e.target.value);
+                      setFormData(prev => ({ ...prev, email: sanitized }));
+                    }}
                     disabled={isLoading}
                   />
                 </div>
@@ -118,10 +139,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onSwit
                 {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
               </div>
 
+              {errors.general && (
+                <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                  <Shield className="h-4 w-4 text-destructive" />
+                  <p className="text-sm text-destructive">{errors.general}</p>
+                </div>
+              )}
+
               <Button 
                 type="submit" 
                 className="w-full" 
-                disabled={isLoading}
+                disabled={isLoading || isRateLimited}
               >
                 {isLoading ? (
                   <>
