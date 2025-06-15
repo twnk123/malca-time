@@ -18,7 +18,17 @@ export const isRestaurantOpen = (
   const formatTime = (timeStr: string) => timeStr.substring(0, 5);
   
   const openTime = parse(`${today} ${formatTime(delovniCasOd)}`, 'yyyy-MM-dd HH:mm', new Date());
-  const closeTime = parse(`${today} ${formatTime(delovniCasDo)}`, 'yyyy-MM-dd HH:mm', new Date());
+  let closeTime = parse(`${today} ${formatTime(delovniCasDo)}`, 'yyyy-MM-dd HH:mm', new Date());
+  
+  // Handle overnight hours (e.g., 21:00 to 05:00)
+  if (isBefore(closeTime, openTime)) {
+    // If close time is before open time, it means it closes the next day
+    closeTime = addMinutes(closeTime, 24 * 60); // Add 24 hours
+    
+    // Check if current time is after opening OR before closing (next day)
+    const nowTomorrow = addMinutes(now, 24 * 60);
+    return isAfter(now, openTime) || isBefore(nowTomorrow, closeTime);
+  }
   
   return isAfter(now, openTime) && isBefore(now, closeTime);
 };
@@ -36,7 +46,12 @@ export const getAvailablePickupTimes = (
   
   // Restaurant opening and closing times today
   const openTime = parse(`${today} ${formatTime(delovniCasOd)}`, 'yyyy-MM-dd HH:mm', new Date());
-  const closeTime = parse(`${today} ${formatTime(delovniCasDo)}`, 'yyyy-MM-dd HH:mm', new Date());
+  let closeTime = parse(`${today} ${formatTime(delovniCasDo)}`, 'yyyy-MM-dd HH:mm', new Date());
+  
+  // Handle overnight hours
+  if (isBefore(closeTime, openTime)) {
+    closeTime = addMinutes(closeTime, 24 * 60); // Add 24 hours
+  }
   
   // Earliest pickup time is now + 30 minutes
   const earliestPickup = addMinutes(now, 30);
@@ -100,7 +115,14 @@ export const getOrderingStatus = (
   // Remove seconds and keep only HH:mm format
   const formatTime = (timeStr: string) => timeStr.substring(0, 5);
   
-  const closeTime = parse(`${today} ${formatTime(delovniCasDo)}`, 'yyyy-MM-dd HH:mm', new Date());
+  let closeTime = parse(`${today} ${formatTime(delovniCasDo)}`, 'yyyy-MM-dd HH:mm', new Date());
+  const openTime = parse(`${today} ${formatTime(delovniCasOd)}`, 'yyyy-MM-dd HH:mm', new Date());
+  
+  // Handle overnight hours
+  if (isBefore(closeTime, openTime)) {
+    closeTime = addMinutes(closeTime, 24 * 60); // Add 24 hours
+  }
+  
   const closingSoonTime = addMinutes(closeTime, -60); // 1 hour before closing
   
   const isOpen = isRestaurantOpen(delovniCasOd, delovniCasDo, now);
