@@ -76,7 +76,18 @@ export const MenuPage: React.FC<MenuPageProps> = ({ restaurant, onBack, onProfil
       {/* Restaurant Header */}
       <div className="relative">
         <div className="aspect-[3/2] relative overflow-hidden bg-gradient-to-br from-primary to-primary/80">
-          <div className="w-full h-full flex items-center justify-center">
+          {restaurant.logo_url ? (
+            <img
+              src={restaurant.logo_url}
+              alt={restaurant.naziv}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.parentElement?.querySelector('.fallback-content')?.classList.remove('hidden');
+              }}
+            />
+          ) : null}
+          <div className={`fallback-content w-full h-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center ${restaurant.logo_url ? 'hidden' : ''}`}>
             <span className="text-6xl font-bold text-primary-foreground/30">{restaurant.naziv.charAt(0)}</span>
           </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
