@@ -90,7 +90,18 @@ export const RestaurantsPage: React.FC<RestaurantsPageProps> = ({ onSelectRestau
                     onClick={() => !isClosed && handleSelectRestaurant(restavracija as any)}
                   >
                     <div className="aspect-[4/3] relative overflow-hidden bg-muted">
-                      <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                      {restavracija.logo_url ? (
+                        <img
+                          src={restavracija.logo_url}
+                          alt={restavracija.naziv}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.parentElement?.querySelector('.fallback-content')?.classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      <div className={`fallback-content w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center ${restavracija.logo_url ? 'hidden' : ''}`}>
                         <span className="text-4xl font-bold text-primary/30">{restavracija.naziv.charAt(0)}</span>
                       </div>
                       <div className="absolute top-3 left-3 flex gap-2">

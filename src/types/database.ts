@@ -52,6 +52,7 @@ export interface Database {
           email: string | null;
           delovni_cas_od: string;
           delovni_cas_do: string;
+          logo_url: string | null;
           aktivna: boolean;
           created_at: string;
           updated_at: string;
@@ -65,6 +66,7 @@ export interface Database {
           email?: string | null;
           delovni_cas_od?: string;
           delovni_cas_do?: string;
+          logo_url?: string | null;
           aktivna?: boolean;
           created_at?: string;
           updated_at?: string;
@@ -78,6 +80,7 @@ export interface Database {
           email?: string | null;
           delovni_cas_od?: string;
           delovni_cas_do?: string;
+          logo_url?: string | null;
           aktivna?: boolean;
           created_at?: string;
           updated_at?: string;
