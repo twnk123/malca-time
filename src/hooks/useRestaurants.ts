@@ -40,6 +40,27 @@ export const useRestaurants = () => {
 
   useEffect(() => {
     fetchRestaurants();
+
+    // Listen for real-time updates to restaurants
+    const channel = supabase
+      .channel('restaurants-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'restavracije'
+        },
+        (payload) => {
+          console.log('Restaurant data changed:', payload);
+          fetchRestaurants(); // Refetch data when restaurants table changes
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   return {
