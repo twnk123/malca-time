@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Minus, Plus, X, ShoppingCart } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
@@ -11,6 +11,11 @@ import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useOrders } from '@/hooks/useOrders';
+import { OrderTimeSelector } from '@/components/orders/OrderTimeSelector';
+import { supabase } from '@/integrations/supabase/client';
+import { Database } from '@/integrations/supabase/types';
+
+type Restavracija = Database['public']['Tables']['restavracije']['Row'];
 
 interface CartSheetProps {
   open: boolean;
@@ -21,8 +26,36 @@ export const CartSheet: React.FC<CartSheetProps> = ({ open, onOpenChange }) => {
   const { items, updateQuantity, removeFromCart, getTotalPrice, clearCart } = useCart();
   const [komentar, setKomentar] = useState('');
   const [loading, setLoading] = useState(false);
+  const [selectedTime, setSelectedTime] = useState<string>('');
+  const [restaurant, setRestaurant] = useState<Restavracija | null>(null);
   const { user } = useAuthContext();
   const { createOrder } = useOrders();
+
+  // Fetch restaurant data when items change
+  useEffect(() => {
+    const fetchRestaurant = async () => {
+      if (items.length > 0) {
+        const restavracijaId = items[0].restavracija_id;
+        try {
+          const { data, error } = await supabase
+            .from('restavracije')
+            .select('*')
+            .eq('id', restavracijaId)
+            .single();
+
+          if (error) throw error;
+          setRestaurant(data);
+        } catch (error) {
+          console.error('Error fetching restaurant:', error);
+        }
+      } else {
+        setRestaurant(null);
+        setSelectedTime('');
+      }
+    };
+
+    fetchRestaurant();
+  }, [items]);
 
   const handleOrderSubmit = async () => {
     if (items.length === 0) {
@@ -38,6 +71,15 @@ export const CartSheet: React.FC<CartSheetProps> = ({ open, onOpenChange }) => {
       toast({
         title: "Niste prijavljeni",
         description: "Za oddajo naročila se morate prijaviti.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!selectedTime) {
+      toast({
+        title: "Izberite čas prevzema",
+        description: "Morate izbrati čas prevzema naročila.",
         variant: "destructive"
       });
       return;
@@ -72,11 +114,16 @@ export const CartSheet: React.FC<CartSheetProps> = ({ open, onOpenChange }) => {
 
       console.log('CartSheet: Calling createOrder with:', { restavracijaId, cartItems });
       
+      // Convert selected time to a full timestamp for today
+      const today = new Date();
+      const [hours, minutes] = selectedTime.split(':').map(Number);
+      const pickupTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hours, minutes);
+      
       // Use the orderService to create order and send emails
       await createOrder(
         user.user_id,
         restavracijaId,
-        new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutes from now
+        pickupTime.toISOString(),
         cartItems,
         komentar.trim() || undefined
       );
@@ -85,6 +132,7 @@ export const CartSheet: React.FC<CartSheetProps> = ({ open, onOpenChange }) => {
       
       clearCart();
       setKomentar('');
+      setSelectedTime('');
       onOpenChange(false);
 
     } catch (error) {
@@ -194,6 +242,15 @@ export const CartSheet: React.FC<CartSheetProps> = ({ open, onOpenChange }) => {
                   <span className="text-lg font-semibold">Skupaj:</span>
                   <span className="text-lg font-bold">{getTotalPrice().toFixed(2)}€</span>
                 </div>
+
+                {restaurant && (
+                  <OrderTimeSelector
+                    delovniCasOd={restaurant.delovni_cas_od}
+                    delovniCasDo={restaurant.delovni_cas_do}
+                    selectedTime={selectedTime}
+                    onTimeChange={setSelectedTime}
+                  />
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="komentar">Komentar k naročilu (opcijsko)</Label>
