@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Edit, Trash2, Save, X, Percent, Euro, Calendar, Target } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, Percent, Euro, Calendar as CalendarIcon, Target } from 'lucide-react';
+import { format } from 'date-fns';
+import { sl } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,9 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
+import { cn } from '@/lib/utils';
 
 type Jed = Database['public']['Tables']['jedi']['Row'];
 type Popust = Database['public']['Tables']['popusti']['Row'];
@@ -24,8 +29,8 @@ interface DiscountForm {
   naziv?: string;
   opis?: string;
   aktiven: boolean;
-  veljavnost_od?: string;
-  veljavnost_do?: string;
+  veljavnost_od?: Date;
+  veljavnost_do?: Date;
 }
 
 const defaultDiscountForm: DiscountForm = {
@@ -35,8 +40,8 @@ const defaultDiscountForm: DiscountForm = {
   naziv: '',
   opis: '',
   aktiven: true,
-  veljavnost_od: '',
-  veljavnost_do: ''
+  veljavnost_od: undefined,
+  veljavnost_do: undefined
 };
 
 interface DiscountManagerProps {
@@ -128,8 +133,8 @@ export const DiscountManager: React.FC<DiscountManagerProps> = ({
             naziv: popustForm.naziv || null,
             opis: popustForm.opis || null,
             aktiven: popustForm.aktiven,
-            veljavnost_od: popustForm.veljavnost_od || null,
-            veljavnost_do: popustForm.veljavnost_do || null
+            veljavnost_od: popustForm.veljavnost_od ? popustForm.veljavnost_od.toISOString() : null,
+            veljavnost_do: popustForm.veljavnost_do ? popustForm.veljavnost_do.toISOString() : null
           })
           .eq('id', editingPopust.id);
 
@@ -150,8 +155,8 @@ export const DiscountManager: React.FC<DiscountManagerProps> = ({
             naziv: popustForm.naziv || null,
             opis: popustForm.opis || null,
             aktiven: popustForm.aktiven,
-            veljavnost_od: popustForm.veljavnost_od || null,
-            veljavnost_do: popustForm.veljavnost_do || null
+            veljavnost_od: popustForm.veljavnost_od ? popustForm.veljavnost_od.toISOString() : null,
+            veljavnost_do: popustForm.veljavnost_do ? popustForm.veljavnost_do.toISOString() : null
           });
 
         if (error) throw error;
@@ -186,8 +191,8 @@ export const DiscountManager: React.FC<DiscountManagerProps> = ({
       naziv: popust.naziv || '',
       opis: popust.opis || '',
       aktiven: popust.aktiven,
-      veljavnost_od: popust.veljavnost_od || '',
-      veljavnost_do: popust.veljavnost_do || ''
+      veljavnost_od: popust.veljavnost_od ? new Date(popust.veljavnost_od) : undefined,
+      veljavnost_do: popust.veljavnost_do ? new Date(popust.veljavnost_do) : undefined
     });
     setDialogOpen(true);
   };
@@ -359,20 +364,56 @@ export const DiscountManager: React.FC<DiscountManagerProps> = ({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Velja od</Label>
-                    <Input
-                      type="datetime-local"
-                      value={popustForm.veljavnost_od}
-                      onChange={(e) => setPopustForm(prev => ({ ...prev, veljavnost_od: e.target.value }))}
-                    />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !popustForm.veljavnost_od && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {popustForm.veljavnost_od ? format(popustForm.veljavnost_od, 'dd.MM.yyyy', { locale: sl }) : 'Izberite datum'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={popustForm.veljavnost_od}
+                          onSelect={(date) => setPopustForm(prev => ({ ...prev, veljavnost_od: date }))}
+                          initialFocus
+                          className="p-3 pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
 
                   <div className="space-y-2">
                     <Label>Velja do</Label>
-                    <Input
-                      type="datetime-local"
-                      value={popustForm.veljavnost_do}
-                      onChange={(e) => setPopustForm(prev => ({ ...prev, veljavnost_do: e.target.value }))}
-                    />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !popustForm.veljavnost_do && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {popustForm.veljavnost_do ? format(popustForm.veljavnost_do, 'dd.MM.yyyy', { locale: sl }) : 'Izberite datum'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={popustForm.veljavnost_do}
+                          onSelect={(date) => setPopustForm(prev => ({ ...prev, veljavnost_do: date }))}
+                          initialFocus
+                          className="p-3 pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </div>
 
@@ -441,8 +482,8 @@ export const DiscountManager: React.FC<DiscountManagerProps> = ({
                     </p>
                   )}
                   {(popust.veljavnost_od || popust.veljavnost_do) && (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Calendar className="w-3 h-3" />
+                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <CalendarIcon className="w-3 h-3" />
                       {popust.veljavnost_od && (
                         <span>Od: {new Date(popust.veljavnost_od).toLocaleDateString('sl-SI')}</span>
                       )}
