@@ -17,10 +17,6 @@ export const useDiscounts = () => {
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetchDiscounts();
-  }, []);
-
   const fetchDiscounts = async () => {
     try {
       setLoading(true);
@@ -38,6 +34,10 @@ export const useDiscounts = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchDiscounts();
+  }, []);
 
   const getDiscountForFood = (jedId: string) => {
     return discounts.find(discount => discount.jed_id === jedId);

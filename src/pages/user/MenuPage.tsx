@@ -41,12 +41,15 @@ export const MenuPage: React.FC<MenuPageProps> = ({ restaurant, onBack, onProfil
 
   const handleAddToCart = (jed: Jed) => {
     const kolicina = quantities[jed.id] || 1;
+    const discount = getDiscountForFood(jed.id);
+    const originalPrice = Number(jed.cena);
+    const finalPrice = discount ? calculateDiscountedPrice(originalPrice, discount) : originalPrice;
     
     for (let i = 0; i < kolicina; i++) {
       addToCart({
         id: jed.id,
         naziv: jed.ime,
-        cena: Number(jed.cena),
+        cena: finalPrice,
         opis: jed.opis || '',
         restavracija_id: restaurant.id,
         restavracija_naziv: restaurant.naziv
@@ -57,7 +60,7 @@ export const MenuPage: React.FC<MenuPageProps> = ({ restaurant, onBack, onProfil
     
     toast({
       title: "Dodano v košarico",
-      description: `${jed.ime} (${kolicina}x) - ${(Number(jed.cena) * kolicina).toFixed(2)}€`,
+      description: `${jed.ime} (${kolicina}x) - ${(finalPrice * kolicina).toFixed(2)}€${discount ? ' (popust!)' : ''}`,
     });
   };
 

@@ -67,13 +67,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onSwit
     }
   };
 
-  const handleDemoLogin = (role: 'uporabnik' | 'admin') => {
-    if (role === 'uporabnik') {
-      setFormData({ email: 'test@uporabnik.si', password: '123456' });
-    } else {
-      setFormData({ email: 'admin@restavracija.si', password: '123456' });
-    }
-  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -162,37 +155,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onSwit
               </Button>
             </form>
 
-            <div className="space-y-3">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">
-                    Demo računi
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDemoLogin('uporabnik')}
-                  disabled={isLoading}
-                >
-                  Demo uporabnik
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDemoLogin('admin')}
-                  disabled={isLoading}
-                >
-                  Demo admin
-                </Button>
-              </div>
-            </div>
 
             <div className="text-center space-y-2">
               <p className="text-sm text-muted-foreground">

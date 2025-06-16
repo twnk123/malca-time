@@ -378,13 +378,12 @@ export const DiscountManager: React.FC<DiscountManagerProps> = ({
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={popustForm.veljavnost_od}
-                          onSelect={(date) => setPopustForm(prev => ({ ...prev, veljavnost_od: date }))}
-                          initialFocus
-                          className="p-3 pointer-events-auto"
-                        />
+                          <Calendar
+                            mode="single"
+                            selected={popustForm.veljavnost_od}
+                            onSelect={(date) => setPopustForm(prev => ({ ...prev, veljavnost_od: date }))}
+                            initialFocus
+                          />
                       </PopoverContent>
                     </Popover>
                   </div>
@@ -405,13 +404,12 @@ export const DiscountManager: React.FC<DiscountManagerProps> = ({
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={popustForm.veljavnost_do}
-                          onSelect={(date) => setPopustForm(prev => ({ ...prev, veljavnost_do: date }))}
-                          initialFocus
-                          className="p-3 pointer-events-auto"
-                        />
+                          <Calendar
+                            mode="single"
+                            selected={popustForm.veljavnost_do}
+                            onSelect={(date) => setPopustForm(prev => ({ ...prev, veljavnost_do: date }))}
+                            initialFocus
+                          />
                       </PopoverContent>
                     </Popover>
                   </div>
