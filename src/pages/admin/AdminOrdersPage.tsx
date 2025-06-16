@@ -11,6 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useOrders } from '@/hooks/useOrders';
 import { OrderStatus } from '@/types/database';
+import { OrderWithItems } from '@/types/orders';
 
 const stanjaMap = {
   'novo': { label: 'Novo', variant: 'default' as const, color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
@@ -143,22 +144,8 @@ export const AdminOrdersPage: React.FC = () => {
   );
 };
 
-type OrderWithDetails = {
-  id: string;
-  status: OrderStatus;
-  skupna_cena: number;
-  created_at: string;
-  postavke_narocila: Array<{
-    kolicina: number;
-    cena_na_kos: number;
-    jedi: { ime: string };
-  }>;
-  profili: { ime: string; priimek: string };
-  restavracije: { naziv: string };
-};
-
 interface OrderCardProps {
-  narocilo: OrderWithDetails;
+  narocilo: OrderWithItems;
   index: number;
   onUpdateStanje: (id: string, stanje: OrderStatus) => void;
   readonly?: boolean;
@@ -214,12 +201,38 @@ const OrderCard: React.FC<OrderCardProps> = ({ narocilo, index, onUpdateStanje, 
 
         <CardContent>
           <div className="space-y-2 mb-4">
-            {narocilo.postavke_narocila.map((postavka, index) => (
-              <div key={index} className="flex justify-between items-center text-sm">
-                <span>{postavka.kolicina}x {postavka.jedi.ime}</span>
-                <span className="font-medium">{(postavka.cena_na_kos * postavka.kolicina).toFixed(2)}€</span>
-              </div>
-            ))}
+            {narocilo.postavke_narocila.map((postavka, index) => {
+              const totalPrice = postavka.cena_na_kos * postavka.kolicina;
+              
+              return (
+                <div key={index} className="flex justify-between items-center text-sm">
+                  <span>{postavka.kolicina}x {postavka.jedi.ime}</span>
+                  {postavka.discount ? (
+                    <div className="text-right">
+                      <div className="text-xs text-muted-foreground line-through">
+                        {(() => {
+                          let originalPricePerItem: number;
+                          if (postavka.discount.tip_popusta === 'procent') {
+                            originalPricePerItem = postavka.cena_na_kos / (1 - postavka.discount.vrednost / 100);
+                          } else {
+                            originalPricePerItem = postavka.cena_na_kos + postavka.discount.vrednost;
+                          }
+                          return (originalPricePerItem * postavka.kolicina).toFixed(2);
+                        })()}€
+                      </div>
+                      <div className="flex items-center justify-end gap-1">
+                        <Badge variant="destructive" className="text-xs px-1 py-0">
+                          -{postavka.discount.tip_popusta === 'procent' ? `${postavka.discount.vrednost}%` : `${postavka.discount.vrednost}€`}
+                        </Badge>
+                        <span className="font-medium">{totalPrice.toFixed(2)}€</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="font-medium">{totalPrice.toFixed(2)}€</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           {!readonly && nextStanje && (

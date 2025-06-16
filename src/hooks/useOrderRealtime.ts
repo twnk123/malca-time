@@ -29,7 +29,7 @@ export const useOrderRealtime = (
               *,
               postavke_narocila (
                 *,
-                jedi (ime)
+                jedi (id, ime)
               ),
               restavracije (naziv),
               profili (ime, priimek)
@@ -38,7 +38,23 @@ export const useOrderRealtime = (
             .single();
           
           if (!error && newOrder) {
-            setOrders(prevOrders => [newOrder, ...prevOrders]);
+            // Fetch discounts for the new order items
+            const foodIds = newOrder.postavke_narocila.map(item => item.jedi.id);
+            if (foodIds.length > 0) {
+              const { data: discounts } = await supabase
+                .from('popusti')
+                .select('*')
+                .in('jed_id', foodIds)
+                .eq('aktiven', true);
+              
+              // Add discount information to order items
+              newOrder.postavke_narocila.forEach(item => {
+                const discount = discounts?.find(d => d.jed_id === item.jedi.id);
+                (item as any).discount = discount || null;
+              });
+            }
+            
+            setOrders(prevOrders => [newOrder as any, ...prevOrders]);
           }
         }
       )

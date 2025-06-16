@@ -11,7 +11,7 @@ export const orderService = {
         *,
         postavke_narocila (
           *,
-          jedi (ime)
+          jedi (id, ime)
         ),
         restavracije (naziv),
         profili (ime, priimek)
@@ -24,6 +24,30 @@ export const orderService = {
 
     const { data, error } = await query;
     if (error) throw error;
+
+    // Fetch discounts for all food items in all orders
+    if (data && data.length > 0) {
+      const allFoodIds = data.flatMap(order => 
+        order.postavke_narocila.map(item => item.jedi.id)
+      );
+      
+      if (allFoodIds.length > 0) {
+        const { data: discounts } = await supabase
+          .from('popusti')
+          .select('*')
+          .in('jed_id', allFoodIds)
+          .eq('aktiven', true);
+        
+        // Add discount information to each order item
+        data.forEach(order => {
+          order.postavke_narocila.forEach(item => {
+            const discount = discounts?.find(d => d.jed_id === item.jedi.id);
+            (item as any).discount = discount || null;
+          });
+        });
+      }
+    }
+
     return data || [];
   },
 

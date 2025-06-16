@@ -27,6 +27,12 @@ interface OrderWithItems {
       opis?: string;
       slika_url?: string;
     };
+    discount?: {
+      id: string;
+      tip_popusta: 'procent' | 'znesek';
+      vrednost: number;
+      naziv?: string;
+    } | null;
   }>;
   restavracije: {
     naziv: string;
@@ -81,10 +87,33 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
           ),
           restavracije (naziv)
         `)
-        .eq('uporabnik_id', user?.id)
+        .eq('uporabnik_id', user?.user_id)
         .order('created_at', { ascending: false });
 
       if (ordersError) throw ordersError;
+
+      // Fetch discounts for order items
+      if (ordersData && ordersData.length > 0) {
+        const allFoodIds = ordersData.flatMap(order => 
+          order.postavke_narocila.map(item => item.jedi.id)
+        );
+        
+        if (allFoodIds.length > 0) {
+          const { data: discounts } = await supabase
+            .from('popusti')
+            .select('*')
+            .in('jed_id', allFoodIds)
+            .eq('aktiven', true);
+          
+          // Add discount information to each order item
+          ordersData.forEach(order => {
+            order.postavke_narocila.forEach(item => {
+              const discount = discounts?.find(d => d.jed_id === item.jedi.id);
+              (item as any).discount = discount || null;
+            });
+          });
+        }
+      }
 
       // Fetch favorites
       const { data: favoritesData, error: favoritesError } = await supabase
@@ -96,7 +125,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
             restavracije!inner (naziv)
           )
         `)
-        .eq('uporabnik_id', user?.id);
+        .eq('uporabnik_id', user?.user_id);
 
       if (favoritesError) throw favoritesError;
 
@@ -308,17 +337,43 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-2">
-                        {order.postavke_narocila.map((item) => (
-                          <div key={item.id} className="flex justify-between items-center py-2 border-b last:border-b-0">
-                            <div>
-                              <span className="font-medium">{item.kolicina}x {item.jedi.ime}</span>
-                              {item.jedi.opis && (
-                                <p className="text-sm text-muted-foreground">{item.jedi.opis}</p>
+                        {order.postavke_narocila.map((item) => {
+                          const totalPrice = item.cena_na_kos * item.kolicina;
+                          
+                          return (
+                            <div key={item.id} className="flex justify-between items-center py-2 border-b last:border-b-0">
+                              <div>
+                                <span className="font-medium">{item.kolicina}x {item.jedi.ime}</span>
+                                {item.jedi.opis && (
+                                  <p className="text-sm text-muted-foreground">{item.jedi.opis}</p>
+                                )}
+                              </div>
+                              {item.discount ? (
+                                <div className="text-right">
+                                  <div className="text-xs text-muted-foreground line-through">
+                                    {(() => {
+                                      let originalPricePerItem: number;
+                                      if (item.discount.tip_popusta === 'procent') {
+                                        originalPricePerItem = item.cena_na_kos / (1 - item.discount.vrednost / 100);
+                                      } else {
+                                        originalPricePerItem = item.cena_na_kos + item.discount.vrednost;
+                                      }
+                                      return (originalPricePerItem * item.kolicina).toFixed(2);
+                                    })()}€
+                                  </div>
+                                  <div className="flex items-center justify-end gap-1">
+                                    <Badge variant="destructive" className="text-xs px-1 py-0">
+                                      -{item.discount.tip_popusta === 'procent' ? `${item.discount.vrednost}%` : `${item.discount.vrednost}€`}
+                                    </Badge>
+                                    <span className="font-medium">{totalPrice.toFixed(2)}€</span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="font-medium">{totalPrice.toFixed(2)}€</span>
                               )}
                             </div>
-                            <span className="font-medium">{(item.cena_na_kos * item.kolicina).toFixed(2)}€</span>
-                          </div>
-                        ))}
+                          );
+                        })}
                         <div className="flex justify-between items-center pt-2 text-lg font-bold">
                           <span>Skupaj:</span>
                           <span>{order.skupna_cena.toFixed(2)}€</span>
