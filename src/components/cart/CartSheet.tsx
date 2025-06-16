@@ -14,6 +14,8 @@ import { useOrders } from '@/hooks/useOrders';
 import { OrderTimeSelector } from '@/components/orders/OrderTimeSelector';
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
+import { useDiscounts } from '@/hooks/useDiscounts';
+import { Badge } from '@/components/ui/badge';
 
 type Restavracija = Database['public']['Tables']['restavracije']['Row'];
 
@@ -30,6 +32,7 @@ export const CartSheet: React.FC<CartSheetProps> = ({ open, onOpenChange }) => {
   const [restaurant, setRestaurant] = useState<Restavracija | null>(null);
   const { user } = useAuthContext();
   const { createOrder } = useOrders();
+  const { getDiscountForFood, calculateDiscountedPrice } = useDiscounts();
 
   // Fetch restaurant data when items change
   useEffect(() => {
@@ -190,9 +193,42 @@ export const CartSheet: React.FC<CartSheetProps> = ({ open, onOpenChange }) => {
                           <p className="text-xs text-muted-foreground mt-1">
                             {item.restavracija_naziv}
                           </p>
-                          <p className="text-sm font-medium mt-2">
-                            {item.cena.toFixed(2)}€
-                          </p>
+                          <div className="mt-2">
+                            {(() => {
+                              const discount = getDiscountForFood(item.id);
+                              if (discount) {
+                                // Calculate original price from discounted price
+                                let originalPrice: number;
+                                if (discount.tip_popusta === 'procent') {
+                                  originalPrice = item.cena / (1 - discount.vrednost / 100);
+                                } else {
+                                  originalPrice = item.cena + discount.vrednost;
+                                }
+                                
+                                return (
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-muted-foreground line-through">
+                                        {originalPrice.toFixed(2)}€
+                                      </span>
+                                      <Badge variant="destructive" className="text-[10px] px-1 py-0 h-4">
+                                        -{discount.tip_popusta === 'procent' ? `${discount.vrednost}%` : `${discount.vrednost}€`}
+                                      </Badge>
+                                    </div>
+                                    <p className="text-sm font-medium text-foreground">
+                                      {item.cena.toFixed(2)}€
+                                    </p>
+                                  </div>
+                                );
+                              } else {
+                                return (
+                                  <p className="text-sm font-medium">
+                                    {item.cena.toFixed(2)}€
+                                  </p>
+                                );
+                              }
+                            })()}
+                          </div>
                         </div>
 
                         <div className="flex items-center space-x-1">

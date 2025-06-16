@@ -41,7 +41,7 @@ const handler = async (req: Request): Promise<Response> => {
         *,
         postavke_narocila (
           *,
-          jedi (ime, cena)
+          jedi (id, ime, cena)
         ),
         restavracije (naziv, email, kontakt),
         profili (ime, priimek, email)
@@ -53,6 +53,14 @@ const handler = async (req: Request): Promise<Response> => {
       console.error('Order not found:', error);
       throw new Error(`Order not found: ${error?.message || 'Unknown error'}`);
     }
+
+    // Fetch discounts for all food items in the order
+    const foodIds = order.postavke_narocila.map(item => item.jedi.id);
+    const { data: discounts } = await supabase
+      .from('popusti')
+      .select('*')
+      .in('jed_id', foodIds)
+      .eq('aktiven', true);
     
     console.log('Order found:', order.id, 'User:', order.profili.email);
 
@@ -72,14 +80,40 @@ const handler = async (req: Request): Promise<Response> => {
       minute: '2-digit'
     });
 
-    // Generate order items HTML
+    // Generate order items HTML with discount information
     const orderItemsHtml = order.postavke_narocila
-      .map(item => `
-        <tr style="border-bottom: 1px solid #eee;">
-          <td style="padding: 8px; text-align: left;">${item.kolicina}x ${item.jedi.ime}</td>
-          <td style="padding: 8px; text-align: right;">${(item.cena_na_kos * item.kolicina).toFixed(2)}€</td>
-        </tr>
-      `).join('');
+      .map(item => {
+        const discount = discounts?.find(d => d.jed_id === item.jedi.id);
+        let priceInfo = `${(item.cena_na_kos * item.kolicina).toFixed(2)}€`;
+        
+        if (discount) {
+          // Calculate original price
+          let originalPricePerItem: number;
+          if (discount.tip_popusta === 'procent') {
+            originalPricePerItem = item.cena_na_kos / (1 - discount.vrednost / 100);
+          } else {
+            originalPricePerItem = item.cena_na_kos + discount.vrednost;
+          }
+          const originalTotal = originalPricePerItem * item.kolicina;
+          const discountText = discount.tip_popusta === 'procent' ? `${discount.vrednost}%` : `${discount.vrednost}€`;
+          
+          priceInfo = `
+            <div>
+              <span style="text-decoration: line-through; color: #999; font-size: 12px;">${originalTotal.toFixed(2)}€</span>
+              <span style="background: #dc2626; color: white; padding: 1px 4px; border-radius: 3px; font-size: 10px; margin: 0 4px;">-${discountText}</span>
+              <br>
+              <strong>${(item.cena_na_kos * item.kolicina).toFixed(2)}€</strong>
+            </div>
+          `;
+        }
+        
+        return `
+          <tr style="border-bottom: 1px solid #eee;">
+            <td style="padding: 8px; text-align: left;">${item.kolicina}x ${item.jedi.ime}</td>
+            <td style="padding: 8px; text-align: right;">${priceInfo}</td>
+          </tr>
+        `;
+      }).join('');
 
     // Email template for user
     const userEmailHtml = `
